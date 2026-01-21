@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
+import { MobileNav } from "./MobileNav";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole, rolePermissions } from "@/hooks/useUserRole";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 
 const routePermissions: Record<string, string[]> = {
   "/dashboard": [],
@@ -54,6 +56,7 @@ export function DashboardLayout() {
   const location = useLocation();
   const { toast } = useToast();
   const { role, loading: roleLoading } = useUserRole();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -130,12 +133,20 @@ export function DashboardLayout() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppSidebar onLogout={handleLogout} />
+      {isMobile ? (
+        <MobileNav onLogout={handleLogout} />
+      ) : (
+        <AppSidebar onLogout={handleLogout} />
+      )}
       <main className={cn(
         "min-h-screen transition-all duration-300",
-        "ml-[260px]" // Adjust based on sidebar width
+        isMobile 
+          ? "pt-14 pb-20 px-4" 
+          : "ml-[260px]"
       )}>
-        <div className="container py-6">
+        <div className={cn(
+          isMobile ? "py-4" : "container py-6"
+        )}>
           <Outlet />
         </div>
       </main>
