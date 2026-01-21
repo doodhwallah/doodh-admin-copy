@@ -83,6 +83,27 @@ The app is now fully responsive and optimized for both web and Android TWA:
 2. Build the app: `npm run build`
 3. Use the `dist/` folder with Android Studio's TWA builder
 
+## Supabase Keep-Alive (Jan 2026)
+GitHub Actions workflow runs daily to prevent Supabase from pausing after 7 days of inactivity.
+
+**File**: `.github/workflows/supabase-keepalive.yml`
+**Schedule**: Daily at 6:00 AM UTC
+**Type**: Read-only RPC function call (no storage consumed)
+
+### Database Setup
+The migration `supabase/migrations/20260121170000_add_ping_function.sql` creates a `ping()` function:
+- Returns "pong" when called
+- Granted to both `anon` and `authenticated` roles
+- Uses `STABLE` (read-only, no side effects)
+
+### Required GitHub Secrets
+Add these secrets to your GitHub repository (Settings → Secrets → Actions):
+1. `SUPABASE_URL` - Your Supabase project URL (e.g., `https://xxx.supabase.co`)
+2. `SUPABASE_ANON_KEY` - Your Supabase anon/public key
+
+### Manual Trigger
+You can also manually run the workflow from GitHub Actions → Supabase Keep Alive → Run workflow
+
 ## Deployment
 Static build deployed to `dist/` directory.
 - Build command: `npm run build`
