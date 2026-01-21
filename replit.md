@@ -115,6 +115,24 @@ To also ping your Vercel website, add this secret in Supabase Dashboard → Edge
 ### Manual Trigger
 You can also manually run the workflow from GitHub Actions → Supabase Keep Alive → Run workflow
 
+### Alternative: cron-job.org (No GitHub Required)
+If you prefer not to use GitHub Actions, use the free cron-job.org service:
+
+1. Go to [cron-job.org](https://cron-job.org) and create a free account
+2. Click "Create cronjob"
+3. Configure:
+   - **Title**: Supabase Keep Alive
+   - **URL**: `https://YOUR_SUPABASE_PROJECT.supabase.co/functions/v1/ping`
+   - **Schedule**: Custom → 09:00, Every day
+   - **Timezone**: Asia/Kolkata (IST)
+   - **Request Method**: POST
+   - **Headers**: Add these headers:
+     - `Authorization`: `Bearer YOUR_SUPABASE_ANON_KEY`
+     - `Content-Type`: `application/json`
+4. Save and enable the cronjob
+
+This provides a completely independent ping system that doesn't rely on GitHub.
+
 ## Deployment
 Static build deployed to `dist/` directory.
 - Build command: `npm run build`
