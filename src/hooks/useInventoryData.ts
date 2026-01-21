@@ -83,10 +83,30 @@ export function useInventoryData() {
       });
 
       if (error) throw error;
+
+      // Auto-create expense entry for initial stock purchase
+      const initialStock = parseFloat(formData.current_stock) || 0;
+      const costPerUnit = formData.cost_per_unit ? parseFloat(formData.cost_per_unit) : 0;
+      
+      if (initialStock > 0 && costPerUnit > 0) {
+        await logFeedPurchase(
+          formData.name,
+          initialStock,
+          costPerUnit,
+          formData.unit,
+          format(new Date(), "yyyy-MM-dd")
+        );
+      }
     },
-    onSuccess: () => {
+    onSuccess: (_, formData) => {
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
-      toast({ title: "Item added" });
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      const initialStock = parseFloat(formData.current_stock) || 0;
+      const costPerUnit = formData.cost_per_unit ? parseFloat(formData.cost_per_unit) : 0;
+      const message = initialStock > 0 && costPerUnit > 0 
+        ? "Item added & expense recorded" 
+        : "Item added";
+      toast({ title: message });
     },
     onError: (error: Error) => {
       toast({ title: "Error saving item", description: error.message, variant: "destructive" });
@@ -160,6 +180,9 @@ export function useInventoryData() {
     },
     onSuccess: (_, { type, item }) => {
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      if (type === "add" && item.cost_per_unit) {
+        queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      }
       const message =
         type === "add" && item.cost_per_unit ? "Stock updated & expense recorded" : "Stock updated";
       toast({ title: message });
