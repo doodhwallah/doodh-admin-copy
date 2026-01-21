@@ -87,10 +87,17 @@ The app is now fully responsive and optimized for both web and Android TWA:
 GitHub Actions workflow runs daily to prevent Supabase from pausing after 7 days of inactivity.
 
 **File**: `.github/workflows/supabase-keepalive.yml`
-**Schedule**: Daily at 6:00 AM UTC
-**Type**: Read-only RPC function call (no storage consumed)
+**Schedule**: Daily at 09:00 IST (03:30 UTC)
+**Type**: Edge Function call + optional Vercel ping (no DB writes)
 
-### Database Setup
+### Edge Function
+**File**: `supabase/functions/ping/index.ts`
+- Lightweight Deno Edge Function
+- Optionally pings a Vercel website endpoint (if `VERCEL_WEBSITE_URL` is set)
+- No database writes - purely HTTP calls
+- Deploy with: `supabase functions deploy ping`
+
+### Database Function (Optional Fallback)
 The migration `supabase/migrations/20260121170000_add_ping_function.sql` creates a `ping()` function:
 - Returns "pong" when called
 - Granted to both `anon` and `authenticated` roles
@@ -100,6 +107,10 @@ The migration `supabase/migrations/20260121170000_add_ping_function.sql` creates
 Add these secrets to your GitHub repository (Settings → Secrets → Actions):
 1. `SUPABASE_URL` - Your Supabase project URL (e.g., `https://xxx.supabase.co`)
 2. `SUPABASE_ANON_KEY` - Your Supabase anon/public key
+
+### Optional: Vercel Website Ping
+To also ping your Vercel website, add this secret in Supabase Dashboard → Edge Functions → ping → Secrets:
+- `VERCEL_WEBSITE_URL` - Your Vercel website URL (e.g., `https://yoursite.vercel.app`)
 
 ### Manual Trigger
 You can also manually run the workflow from GitHub Actions → Supabase Keep Alive → Run workflow
