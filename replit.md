@@ -26,6 +26,14 @@ public/        - Static assets
 supabase/      - Supabase configuration
 ```
 
+## Automated Expense Tracking (Jan 2026)
+- Feed/Inventory purchases automatically create expense entries in the Expenses table
+- Works when:
+  - Adding a **new inventory item** with initial stock and cost per unit
+  - Adding stock to an **existing item** that has cost per unit set
+- Implementation in `src/hooks/useInventoryData.ts` using `logFeedPurchase` from `useExpenseAutomation`
+- Duplicate prevention via reference-based checking
+
 ## Security Improvements (Jan 2026)
 - **Ledger Race Conditions**: Fixed with per-customer mutex locking in `useLedgerAutomation.ts`
 - **Auth Rate Limiting**: 5 attempts max, 15-minute lockout, 1s debounce in `Auth.tsx`
