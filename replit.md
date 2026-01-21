@@ -45,6 +45,36 @@ The project uses Supabase for backend services:
 - `VITE_SUPABASE_PUBLISHABLE_KEY` - Supabase anon key
 - `VITE_SUPABASE_URL` - Supabase API URL
 
+## Mobile & TWA Optimization (Jan 2026)
+The app is now fully responsive and optimized for both web and Android TWA:
+
+### PWA Configuration
+- `public/manifest.json` - App manifest with theme colors, display mode, and icons
+- `public/sw.js` - Service worker for offline capability
+- Icons in `public/icons/` - SVG app icons (generate PNGs for Play Store)
+
+### Responsive Navigation
+- **Desktop**: Fixed sidebar (`AppSidebar.tsx`) with collapsible toggle
+- **Mobile**: Bottom navigation bar + hamburger drawer menu (`MobileNav.tsx`)
+- Both use shared config from `src/config/navigation.ts` with role-based filtering
+
+### Mobile-Friendly Features
+- Touch targets minimum 44px for accessibility
+- Safe area handling for notched devices (env() insets)
+- Disabled tap highlights and pull-to-refresh
+- Input font-size 16px to prevent iOS zoom
+- Responsive breakpoints with `useIsMobile` hook
+
+### Key Files
+- `src/hooks/useMediaQuery.ts` - Screen size detection hooks
+- `src/config/navigation.ts` - Shared navigation config with role permissions
+- `src/index.css` - Mobile & TWA specific CSS utilities
+
+### For Production TWA
+1. Generate PNG icons (192x192, 512x512) from the SVG templates
+2. Build the app: `npm run build`
+3. Use the `dist/` folder with Android Studio's TWA builder
+
 ## Deployment
 Static build deployed to `dist/` directory.
 - Build command: `npm run build`
