@@ -9,6 +9,7 @@ import {
 import { Download, FileSpreadsheet, FileText, File } from "lucide-react";
 import { exportToExcel, exportToPDF, exportToCSV } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
+import { devError } from "@/lib/utils";
 
 interface ExportColumn {
   key: string;
@@ -55,7 +56,7 @@ export function ExportButton<T extends Record<string, any>>({
       }
       toast({ title: "Export successful", description: `Data exported as ${format.toUpperCase()}` });
     } catch (error) {
-      console.error('Export error:', error);
+      devError('Export error:', error);
       toast({ title: "Export failed", description: "Failed to export data", variant: "destructive" });
     } finally {
       setExporting(false);

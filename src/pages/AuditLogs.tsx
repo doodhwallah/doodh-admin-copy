@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Activity, Eye, Filter, Download, Loader2, User, Clock, FileText } from "lucide-react";
 import { format } from "date-fns";
+import { devError } from "@/lib/utils";
 
 interface ActivityLog {
   id: string;
@@ -74,7 +75,7 @@ export default function AuditLogsPage() {
       if (logsRes.data) setLogs(logsRes.data);
       if (profilesRes.data) setProfiles(profilesRes.data);
     } catch (error) {
-      console.error("Error fetching data:", error);
+      devError("Error fetching data:", error);
     } finally {
       setLoading(false);
     }

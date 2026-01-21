@@ -10,6 +10,7 @@ import { useCustomerAuth } from '@/hooks/useCustomerAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { getProductName, getProductPrice } from '@/lib/supabase-helpers';
+import { devError } from '@/lib/utils';
 
 interface SubscriptionProduct {
   id: string;
@@ -71,7 +72,7 @@ export default function CustomerSubscription() {
 
       setProducts(formattedProducts);
     } catch (error) {
-      console.error('Error fetching subscriptions:', error);
+      devError('Error fetching subscriptions:', error);
       toast({ title: "Error loading subscriptions", variant: "destructive" });
     } finally {
       setLoading(false);
@@ -92,7 +93,7 @@ export default function CustomerSubscription() {
       setProducts(prev => prev.map(p => p.id === id ? { ...p, quantity: newQty } : p));
       toast({ title: "Quantity updated" });
     } catch (error) {
-      console.error('Error updating quantity:', error);
+      devError('Error updating quantity:', error);
       toast({ title: "Failed to update quantity", variant: "destructive" });
     }
   };
@@ -109,7 +110,7 @@ export default function CustomerSubscription() {
       setProducts(prev => prev.map(p => p.id === id ? { ...p, is_active: isActive } : p));
       toast({ title: isActive ? "Product activated" : "Product paused" });
     } catch (error) {
-      console.error('Error toggling product:', error);
+      devError('Error toggling product:', error);
       toast({ title: "Failed to update product", variant: "destructive" });
     }
   };
@@ -126,7 +127,7 @@ export default function CustomerSubscription() {
       setProducts(prev => prev.filter(p => p.id !== id));
       toast({ title: "Product removed from subscription" });
     } catch (error) {
-      console.error('Error removing product:', error);
+      devError('Error removing product:', error);
       toast({ title: "Failed to remove product", variant: "destructive" });
     }
   };
@@ -155,7 +156,7 @@ export default function CustomerSubscription() {
       setVacationEnd('');
       setDialogOpen(false);
     } catch (error) {
-      console.error('Error scheduling vacation:', error);
+      devError('Error scheduling vacation:', error);
       toast({ title: "Failed to schedule vacation", variant: "destructive" });
     } finally {
       setSavingVacation(false);

@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { devError } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Calendar, DollarSign, Clock, Users, CheckCircle, XCircle, Loader2, Eye } from "lucide-react";
 import { format } from "date-fns";
@@ -120,7 +121,7 @@ export default function EmployeesPage() {
       if (payRes.data) setPayroll(payRes.data);
       if (shiftRes.data) setShifts(shiftRes.data);
     } catch (error) {
-      console.error("Error fetching data:", error);
+      devError("Error fetching data:", error);
     } finally {
       setLoading(false);
     }

@@ -11,6 +11,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { devError } from "@/lib/utils";
 import { 
   CheckCircle2, 
   Loader2, 
@@ -95,14 +96,14 @@ export function BulkDeliveryActions({
             .eq("id", delivery.id);
 
           if (error) {
-            console.error("Error updating delivery:", error);
+            devError("Error updating delivery:", error);
             failed++;
           } else {
             success++;
           }
         }
       } catch (err) {
-        console.error("Error processing delivery:", err);
+        devError("Error processing delivery:", err);
         failed++;
       }
 

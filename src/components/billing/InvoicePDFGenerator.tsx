@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { devError } from "@/lib/utils";
 
 interface DairySettings {
   dairy_name: string;
@@ -480,7 +481,7 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
         setPreviewOpen(true);
       }
     } catch (error) {
-      console.error("Error generating PDF:", error);
+      devError("Error generating PDF:", error);
     } finally {
       setGenerating(false);
     }

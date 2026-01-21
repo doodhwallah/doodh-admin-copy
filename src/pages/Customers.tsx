@@ -57,6 +57,8 @@ const emptyFormData = {
   notes: "",
 };
 
+const PAGE_SIZE = 50;
+
 export default function CustomersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -69,7 +71,14 @@ export default function CustomersPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [formData, setFormData] = useState(emptyFormData);
   const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
+
+  useEffect(() => {
+    setPage(0);
+  }, [searchQuery]);
 
   useEffect(() => {
     fetchCustomers();
@@ -77,14 +86,22 @@ export default function CustomersPage() {
       setDialogOpen(true);
       setSearchParams({});
     }
-  }, [searchParams]);
+  }, [searchParams, page, searchQuery]);
 
   const fetchCustomers = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    
+    let query = supabase
       .from("customers")
-      .select("*")
-      .order("name");
+      .select("*", { count: "exact" });
+    
+    if (searchQuery.trim()) {
+      query = query.or(`name.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%,area.ilike.%${searchQuery}%`);
+    }
+    
+    const { data, error, count } = await query
+      .order("name")
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
     if (error) {
       toast({
@@ -94,9 +111,12 @@ export default function CustomersPage() {
       });
     } else {
       setCustomers(data || []);
+      setTotalCount(count || 0);
     }
     setLoading(false);
   };
+
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   const handleOpenDialog = (customer?: Customer) => {
     if (customer) {

@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { devError } from "@/lib/utils";
 import { 
   BarChart3, 
   Droplets, 
@@ -129,7 +130,7 @@ export default function ReportsPage() {
         totalAdvance: customers.reduce((sum, c) => sum + Number(c.advance_balance), 0),
       });
     } catch (error) {
-      console.error("Error fetching report data:", error);
+      devError("Error fetching report data:", error);
     } finally {
       setLoading(false);
     }

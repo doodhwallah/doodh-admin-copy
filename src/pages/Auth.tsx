@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -19,14 +19,81 @@ const loginSchema = z.object({
   pin: z.string().length(6, "PIN must be exactly 6 digits"),
 });
 
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
+const ATTEMPT_DEBOUNCE_MS = 1000;
+
+interface AttemptState {
+  count: number;
+  lockedUntil: number | null;
+}
+
+function getAttemptState(): AttemptState {
+  try {
+    const stored = sessionStorage.getItem("auth_attempts");
+    if (stored) {
+      const state = JSON.parse(stored) as AttemptState;
+      if (state.lockedUntil && Date.now() > state.lockedUntil) {
+        sessionStorage.removeItem("auth_attempts");
+        return { count: 0, lockedUntil: null };
+      }
+      return state;
+    }
+  } catch {
+    // Ignore storage errors
+  }
+  return { count: 0, lockedUntil: null };
+}
+
+function setAttemptState(state: AttemptState): void {
+  try {
+    sessionStorage.setItem("auth_attempts", JSON.stringify(state));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 export default function Auth() {
   const [phone, setPhone] = useState("");
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
   const [bootstrapping, setBootstrapping] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [attemptState, setAttemptStateLocal] = useState<AttemptState>(getAttemptState);
+  const lastAttemptRef = useRef<number>(0);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const isLockedOut = attemptState.lockedUntil !== null && Date.now() < attemptState.lockedUntil;
+  const remainingLockoutSeconds = isLockedOut 
+    ? Math.ceil((attemptState.lockedUntil! - Date.now()) / 1000) 
+    : 0;
+
+  useEffect(() => {
+    if (!isLockedOut) return;
+    const timer = setInterval(() => {
+      const state = getAttemptState();
+      setAttemptStateLocal(state);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isLockedOut]);
+
+  const recordFailedAttempt = useCallback(() => {
+    const current = getAttemptState();
+    const newCount = current.count + 1;
+    const newState: AttemptState = {
+      count: newCount,
+      lockedUntil: newCount >= MAX_ATTEMPTS ? Date.now() + LOCKOUT_DURATION_MS : null,
+    };
+    setAttemptState(newState);
+    setAttemptStateLocal(newState);
+    return newState;
+  }, []);
+
+  const resetAttempts = useCallback(() => {
+    sessionStorage.removeItem("auth_attempts");
+    setAttemptStateLocal({ count: 0, lockedUntil: null });
+  }, []);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -98,6 +165,21 @@ export default function Auth() {
   };
 
   const handleLogin = async () => {
+    if (isLockedOut) {
+      toast({
+        title: "Account temporarily locked",
+        description: `Too many failed attempts. Please try again in ${Math.ceil(remainingLockoutSeconds / 60)} minutes.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastAttemptRef.current < ATTEMPT_DEBOUNCE_MS) {
+      return;
+    }
+    lastAttemptRef.current = now;
+
     const cleanPhone = phone.replace(/[^0-9]/g, '');
 
     try {
@@ -125,20 +207,29 @@ export default function Auth() {
     setLoading(false);
 
     if (error) {
-      // If login fails and this is the admin phone, offer to bootstrap
-      if (cleanPhone === '7897716792' && pin === '101101') {
+      const newState = recordFailedAttempt();
+      
+      if (newState.lockedUntil) {
+        toast({
+          title: "Account temporarily locked",
+          description: "Too many failed attempts. Please try again in 15 minutes.",
+          variant: "destructive",
+        });
+      } else if (cleanPhone === '7897716792' && pin === '101101') {
         toast({
           title: "Account not found",
           description: "Click 'Setup Admin Account' to create your admin account.",
         });
       } else {
+        const attemptsRemaining = MAX_ATTEMPTS - newState.count;
         toast({
           title: "Login failed",
-          description: sanitizeError(error, "Invalid mobile number or PIN. Please try again."),
+          description: `${sanitizeError(error, "Invalid mobile number or PIN.")}${attemptsRemaining > 0 ? ` ${attemptsRemaining} attempts remaining.` : ''}`,
           variant: "destructive",
         });
       }
     } else {
+      resetAttempts();
       toast({
         title: "Welcome back!",
         description: "Successfully logged in.",
@@ -243,12 +334,14 @@ export default function Auth() {
                 )}
               </div>
               
-              <Button type="submit" className="w-full" disabled={loading || bootstrapping}>
+              <Button type="submit" className="w-full" disabled={loading || bootstrapping || isLockedOut}>
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Signing in...
                   </>
+                ) : isLockedOut ? (
+                  `Locked (${Math.ceil(remainingLockoutSeconds / 60)}m)`
                 ) : (
                   "Sign In"
                 )}

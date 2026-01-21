@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { devError } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -116,7 +117,7 @@ export default function DeliveriesPage() {
 
       setVacationCustomers(new Set((vacationRes.data || []).map(v => v.customer_id)));
     } catch (error) {
-      console.error("Error fetching data:", error);
+      devError("Error fetching data:", error);
     } finally {
       setLoading(false);
     }

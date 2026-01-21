@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useCustomerAuth } from '@/hooks/useCustomerAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { getProductName } from '@/lib/supabase-helpers';
+import { devError } from '@/lib/utils';
 
 interface DeliverySummary {
   pending: number;
@@ -107,7 +108,7 @@ export default function CustomerDashboard() {
       setIsOnVacation(!!vacationRes.data);
 
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      devError('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }

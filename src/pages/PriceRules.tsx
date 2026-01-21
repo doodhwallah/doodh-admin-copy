@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Percent, DollarSign, Droplets, Loader2 } from "lucide-react";
+import { devError } from "@/lib/utils";
 
 interface Product {
   id: string;
@@ -64,7 +65,7 @@ export default function PriceRulesPage() {
       if (productsRes.data) setProducts(productsRes.data);
       if (rulesRes.data) setRules(rulesRes.data);
     } catch (error) {
-      console.error("Error fetching data:", error);
+      devError("Error fetching data:", error);
     } finally {
       setLoading(false);
     }

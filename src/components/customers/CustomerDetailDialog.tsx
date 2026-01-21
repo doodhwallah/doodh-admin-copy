@@ -13,6 +13,7 @@ import {
   TrendingUp, CreditCard, Palmtree, ShoppingCart
 } from "lucide-react";
 import { format, parseISO, differenceInDays } from "date-fns";
+import { devError } from "@/lib/utils";
 
 interface Customer {
   id: string;
@@ -210,7 +211,7 @@ export function CustomerDetailDialog({ customer, open, onOpenChange }: CustomerD
       if (vacRes.data) setVacations(vacRes.data);
       if (ledgerRes.data) setLedger(ledgerRes.data);
     } catch (error) {
-      console.error("Error fetching customer data:", error);
+      devError("Error fetching customer data:", error);
     } finally {
       setLoading(false);
     }

@@ -4,6 +4,7 @@ import { TrendingUp, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays, startOfDay } from "date-fns";
+import { devError } from "@/lib/utils";
 
 interface DailyProduction {
   day: string;
@@ -23,7 +24,7 @@ async function fetchWeeklyProduction(): Promise<DailyProduction[]> {
     .order("production_date", { ascending: true });
 
   if (error) {
-    console.error("Error fetching production data:", error);
+    devError("Error fetching production data:", error);
     return [];
   }
 

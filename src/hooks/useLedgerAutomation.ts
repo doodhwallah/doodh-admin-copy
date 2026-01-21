@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
@@ -16,6 +16,29 @@ interface LedgerResult {
   errors: string[];
 }
 
+const customerLocks = new Map<string, Promise<void>>();
+
+async function withCustomerLock<T>(customerId: string, fn: () => Promise<T>): Promise<T> {
+  const existingLock = customerLocks.get(customerId);
+  
+  let resolve: () => void;
+  const newLock = new Promise<void>((r) => { resolve = r; });
+  customerLocks.set(customerId, newLock);
+  
+  if (existingLock) {
+    await existingLock;
+  }
+  
+  try {
+    return await fn();
+  } finally {
+    resolve!();
+    if (customerLocks.get(customerId) === newLock) {
+      customerLocks.delete(customerId);
+    }
+  }
+}
+
 /**
  * Ledger automation for automatic transaction logging
  * 
@@ -24,8 +47,12 @@ interface LedgerResult {
  * 2. Payments → Credit entry
  * 3. Invoice generation → Debit entry
  * 4. Advance payments → Credit entry
+ * 
+ * Uses per-customer locking to prevent race conditions in balance calculation.
  */
 export function useLedgerAutomation() {
+  const pendingOps = useRef(customerLocks);
+
   /**
    * Get current running balance for a customer
    */
@@ -44,25 +71,28 @@ export function useLedgerAutomation() {
 
   /**
    * Create a ledger entry with automatic balance calculation
+   * Uses per-customer locking to ensure atomic balance updates
    */
   const createLedgerEntry = useCallback(async (entry: LedgerEntry): Promise<boolean> => {
-    const currentBalance = await getRunningBalance(entry.customer_id);
-    const debit = entry.debit_amount || 0;
-    const credit = entry.credit_amount || 0;
-    const newBalance = currentBalance + debit - credit;
+    return withCustomerLock(entry.customer_id, async () => {
+      const currentBalance = await getRunningBalance(entry.customer_id);
+      const debit = entry.debit_amount || 0;
+      const credit = entry.credit_amount || 0;
+      const newBalance = currentBalance + debit - credit;
 
-    const { error } = await supabase.from("customer_ledger").insert({
-      customer_id: entry.customer_id,
-      transaction_type: entry.transaction_type,
-      description: entry.description,
-      debit_amount: debit > 0 ? debit : null,
-      credit_amount: credit > 0 ? credit : null,
-      reference_id: entry.reference_id || null,
-      running_balance: newBalance,
-      transaction_date: format(new Date(), "yyyy-MM-dd"),
+      const { error } = await supabase.from("customer_ledger").insert({
+        customer_id: entry.customer_id,
+        transaction_type: entry.transaction_type,
+        description: entry.description,
+        debit_amount: debit > 0 ? debit : null,
+        credit_amount: credit > 0 ? credit : null,
+        reference_id: entry.reference_id || null,
+        running_balance: newBalance,
+        transaction_date: format(new Date(), "yyyy-MM-dd"),
+      });
+
+      return !error;
     });
-
-    return !error;
   }, [getRunningBalance]);
 
   /**

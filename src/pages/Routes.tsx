@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, MapPin, Users, Truck, ArrowUp, ArrowDown, GripVertical, Loader2 } from "lucide-react";
+import { devError } from "@/lib/utils";
 
 interface Route {
   id: string;
@@ -86,7 +87,7 @@ export default function RoutesPage() {
       if (customersRes.data) setCustomers(customersRes.data);
       if (employeesRes.data) setEmployees(employeesRes.data);
     } catch (error) {
-      console.error("Error fetching data:", error);
+      devError("Error fetching data:", error);
     } finally {
       setLoading(false);
     }

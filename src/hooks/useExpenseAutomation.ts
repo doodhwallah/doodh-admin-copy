@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { devLog, devError } from "@/lib/utils";
 
 interface ExpenseEntry {
   category: string;
@@ -37,7 +38,7 @@ export function useExpenseAutomation() {
     if (entry.reference_id && entry.reference_type) {
       const exists = await checkExpenseExists(entry.reference_id, entry.reference_type);
       if (exists) {
-        console.log(`Expense already exists for ${entry.reference_type}:${entry.reference_id}`);
+        devLog(`Expense already exists for ${entry.reference_type}:${entry.reference_id}`);
         return false;
       }
     }
@@ -53,11 +54,11 @@ export function useExpenseAutomation() {
     });
 
     if (error) {
-      console.error("Failed to create automated expense:", error);
+      devError("Failed to create automated expense:", error);
       return false;
     }
 
-    console.log(`✓ Automated expense created: ${entry.title} - ₹${entry.amount}`);
+    devLog(`✓ Automated expense created: ${entry.title} - ₹${entry.amount}`);
     return true;
   };
 

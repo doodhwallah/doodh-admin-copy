@@ -12,6 +12,7 @@ import {
   Briefcase, TrendingUp, CreditCard
 } from "lucide-react";
 import { format, parseISO, differenceInDays } from "date-fns";
+import { devError } from "@/lib/utils";
 
 interface Employee {
   id: string;
@@ -124,7 +125,7 @@ export function EmployeeDetailDialog({ employee, open, onOpenChange }: EmployeeD
         setShifts(formattedShifts);
       }
     } catch (error) {
-      console.error("Error fetching employee data:", error);
+      devError("Error fetching employee data:", error);
     } finally {
       setLoading(false);
     }

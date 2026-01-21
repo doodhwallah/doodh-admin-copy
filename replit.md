@@ -26,6 +26,15 @@ public/        - Static assets
 supabase/      - Supabase configuration
 ```
 
+## Security Improvements (Jan 2026)
+- **Ledger Race Conditions**: Fixed with per-customer mutex locking in `useLedgerAutomation.ts`
+- **Auth Rate Limiting**: 5 attempts max, 15-minute lockout, 1s debounce in `Auth.tsx`
+- **Role-Based Route Protection**: Route access checks in `DashboardLayout.tsx` using `useUserRole` hook
+- **Pagination**: Added to Customers page (50 items/page with search)
+- **Console Logging**: Replaced all `console.log/error/warn` with `devLog/devError/devWarn` utilities (dev-only)
+- **Error Boundary**: App wrapped with ErrorBoundary component for crash prevention
+- **Error Sanitization**: Sensitive error details filtered via `sanitizeError` utility
+
 ## Development
 - **Port**: 5000
 - **Command**: `npm run dev`

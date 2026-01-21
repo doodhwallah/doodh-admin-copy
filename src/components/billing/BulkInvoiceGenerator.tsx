@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { devError } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -224,10 +225,9 @@ export function BulkInvoiceGenerator({
         });
 
         if (error) {
-          console.error("Error creating invoice:", error);
+          devError("Error creating invoice:", error);
           failed++;
         } else {
-          // Add ledger entry for the invoice
           await supabase.from("customer_ledger").insert({
             customer_id: summary.customer_id,
             transaction_date: new Date().toISOString().split("T")[0],
@@ -239,7 +239,7 @@ export function BulkInvoiceGenerator({
           completed++;
         }
       } catch (err) {
-        console.error("Error processing customer:", err);
+        devError("Error processing customer:", err);
         failed++;
       }
 

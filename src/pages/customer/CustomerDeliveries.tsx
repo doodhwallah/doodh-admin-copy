@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useCustomerAuth } from '@/hooks/useCustomerAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { getProductName } from '@/lib/supabase-helpers';
+import { devError } from '@/lib/utils';
 
 interface DeliveryItem {
   product_name: string;
@@ -102,7 +103,7 @@ export default function CustomerDeliveries() {
 
         setDeliveries(formattedDeliveries);
       } catch (err) {
-        console.error('Error fetching deliveries:', err);
+        devError('Error fetching deliveries:', err);
       } finally {
         setLoading(false);
       }

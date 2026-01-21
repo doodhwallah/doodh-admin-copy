@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCustomerAuth } from '@/hooks/useCustomerAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { devError } from '@/lib/utils';
 
 interface Invoice {
   id: string;
@@ -85,7 +86,7 @@ export default function CustomerBilling() {
           running_balance: entry.running_balance || 0,
         })));
       } catch (err) {
-        console.error('Error fetching billing data:', err);
+        devError('Error fetching billing data:', err);
       } finally {
         setLoading(false);
       }

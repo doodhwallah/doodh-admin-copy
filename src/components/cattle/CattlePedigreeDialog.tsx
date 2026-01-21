@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { GitBranch, User, Users, Baby, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, devError } from "@/lib/utils";
 
 interface CattleBasic {
   id: string;
@@ -104,7 +104,7 @@ export function CattlePedigreeDialog({
 
       setPedigree(pedigreeTree);
     } catch (error) {
-      console.error("Error fetching pedigree:", error);
+      devError("Error fetching pedigree:", error);
     } finally {
       setLoading(false);
     }

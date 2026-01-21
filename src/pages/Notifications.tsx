@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { devError } from "@/lib/utils";
 import { Plus, MessageSquare, Bell, Send, CheckCircle, XCircle, Clock, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -90,7 +91,7 @@ export default function NotificationsPage() {
       if (templatesRes.data) setTemplates(templatesRes.data);
       if (logsRes.data) setLogs(logsRes.data);
     } catch (error) {
-      console.error("Error fetching data:", error);
+      devError("Error fetching data:", error);
     } finally {
       setLoading(false);
     }

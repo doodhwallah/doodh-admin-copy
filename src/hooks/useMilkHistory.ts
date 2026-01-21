@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays } from "date-fns";
+import { devError } from "@/lib/utils";
 
 export interface MilkHistoryRecord {
   date: string;
@@ -52,7 +53,7 @@ export function useMilkHistory() {
       .order("production_date", { ascending: false });
 
     if (error) {
-      console.error("Error fetching milk history:", error);
+      devError("Error fetching milk history:", error);
       setLoading(false);
       return [];
     }
@@ -139,7 +140,7 @@ export function useMilkHistory() {
     const { data, error } = await query;
 
     if (error) {
-      console.error("Error fetching daily totals:", error);
+      devError("Error fetching daily totals:", error);
       setLoading(false);
       return [];
     }
