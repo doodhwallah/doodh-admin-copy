@@ -233,20 +233,93 @@ function generateCSV(result: ExportResult, timeRange: TimeRange): void {
     if (!tableData || tableData.data.length === 0) continue;
 
     const csvRows: string[] = [];
-    csvRows.push(config.columns.map(c => c.label).join(","));
 
-    tableData.data.forEach((row: any) => {
-      const values = config.columns.map((col) => {
-        const value = getNestedValue(row, col.key);
-        if (value === null || value === undefined) return "";
-        const strVal = String(value);
-        if (strVal.includes(",") || strVal.includes('"') || strVal.includes("\n")) {
-          return `"${strVal.replace(/"/g, '""')}"`;
+    // Special handling for Milk Production - pivot table format
+    if (config.name === "Milk Production") {
+      csvRows.push("Date,Day,Cattle,Morning (L),Evening (L),Day Total (L)");
+
+      // Group data by date, then by cattle (using cattle_id for stable grouping)
+      const productionByDate: Record<string, Record<string, { morning: number; evening: number; cattleName: string; tagNumber: string }>> = {};
+
+      for (const row of tableData.data) {
+        // Normalize date to yyyy-MM-dd format (handle potential time component)
+        const rawDate = String(row.production_date || "").split("T")[0];
+        const date = rawDate || "Unknown";
+        // Use cattle_id from milk_production table (always present as foreign key)
+        const cattleUniqueId = String(row.cattle_id || "unknown");
+        const tagNumber = row.cattle?.tag_number || `ID:${cattleUniqueId}`;
+        const cattleName = row.cattle?.name ? `${tagNumber} (${row.cattle.name})` : tagNumber;
+        const session = row.session;
+        const qty = Number(row.quantity_liters) || 0;
+
+        if (!productionByDate[date]) {
+          productionByDate[date] = {};
         }
-        return strVal;
+        if (!productionByDate[date][cattleUniqueId]) {
+          productionByDate[date][cattleUniqueId] = { morning: 0, evening: 0, cattleName, tagNumber };
+        }
+
+        if (session === "morning") {
+          productionByDate[date][cattleUniqueId].morning += qty;
+        } else {
+          productionByDate[date][cattleUniqueId].evening += qty;
+        }
+      }
+
+      // Sort dates descending
+      const sortedDates = Object.keys(productionByDate).sort((a, b) => b.localeCompare(a));
+
+      for (const date of sortedDates) {
+        const dateData = productionByDate[date];
+        // Safe date formatting
+        let formattedDate = date;
+        let dayName = "";
+        try {
+          const dateObj = new Date(date + "T00:00:00");
+          formattedDate = format(dateObj, "dd/MM/yyyy");
+          dayName = format(dateObj, "EEEE");
+        } catch {
+          formattedDate = date;
+          dayName = "";
+        }
+        // Sort by tag number for display consistency
+        const cattleIds = Object.keys(dateData).sort((a, b) => {
+          return (dateData[a].tagNumber || "").localeCompare(dateData[b].tagNumber || "");
+        });
+
+        let dayMorningTotal = 0;
+        let dayEveningTotal = 0;
+
+        for (const cattleId of cattleIds) {
+          const data = dateData[cattleId];
+          const total = data.morning + data.evening;
+          dayMorningTotal += data.morning;
+          dayEveningTotal += data.evening;
+
+          const cattleName = data.cattleName.includes(",") ? `"${data.cattleName}"` : data.cattleName;
+          csvRows.push(`${formattedDate},${dayName},${cattleName},${data.morning.toFixed(1)},${data.evening.toFixed(1)},${total.toFixed(1)}`);
+        }
+
+        // Add daily totals row
+        csvRows.push(`${formattedDate},${dayName},TOTAL,${dayMorningTotal.toFixed(1)},${dayEveningTotal.toFixed(1)},${(dayMorningTotal + dayEveningTotal).toFixed(1)}`);
+        csvRows.push(""); // Empty row between dates
+      }
+    } else {
+      csvRows.push(config.columns.map(c => c.label).join(","));
+
+      tableData.data.forEach((row: any) => {
+        const values = config.columns.map((col) => {
+          const value = getNestedValue(row, col.key);
+          if (value === null || value === undefined) return "";
+          const strVal = String(value);
+          if (strVal.includes(",") || strVal.includes('"') || strVal.includes("\n")) {
+            return `"${strVal.replace(/"/g, '""')}"`;
+          }
+          return strVal;
+        });
+        csvRows.push(values.join(","));
       });
-      csvRows.push(values.join(","));
-    });
+    }
 
     const csvContent = "\uFEFF" + csvRows.join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -422,6 +495,140 @@ async function generatePDF(result: ExportResult, timeRange: TimeRange): Promise<
     doc.setFont("helvetica", "normal");
     doc.text(`(${tableData.data.length} records${config.masterData ? " - Master Data" : ""})`, margin + doc.getTextWidth(config.name) + 3, yPos);
     yPos += 6;
+
+    // Special handling for Milk Production - pivot table format
+    if (config.name === "Milk Production") {
+      // Group data by date, then by cattle (using cattle_id for stable grouping)
+      const productionByDate: Record<string, Record<string, { morning: number; evening: number; cattleName: string; tagNumber: string }>> = {};
+
+      for (const row of tableData.data) {
+        // Normalize date to yyyy-MM-dd format (handle potential time component)
+        const rawDate = String(row.production_date || "").split("T")[0];
+        const date = rawDate || "Unknown Date";
+        // Use cattle_id from milk_production table (always present as foreign key)
+        // The * in query selects all columns including cattle_id
+        const cattleUniqueId = String(row.cattle_id || "unknown");
+        const tagNumber = row.cattle?.tag_number || `ID:${cattleUniqueId}`;
+        const cattleName = row.cattle?.name ? `${tagNumber} (${row.cattle.name})` : tagNumber;
+        const session = row.session;
+        const qty = Number(row.quantity_liters) || 0;
+
+        if (!productionByDate[date]) {
+          productionByDate[date] = {};
+        }
+        if (!productionByDate[date][cattleUniqueId]) {
+          productionByDate[date][cattleUniqueId] = { morning: 0, evening: 0, cattleName, tagNumber };
+        }
+
+        if (session === "morning") {
+          productionByDate[date][cattleUniqueId].morning += qty;
+        } else {
+          productionByDate[date][cattleUniqueId].evening += qty;
+        }
+      }
+
+      // Sort dates descending
+      const sortedDates = Object.keys(productionByDate).sort((a, b) => b.localeCompare(a));
+
+      // Create tables for each date
+      for (const date of sortedDates) {
+        const dateData = productionByDate[date];
+        // Safe date formatting (date is already yyyy-MM-dd)
+        let formattedDate = date;
+        try {
+          const dateObj = new Date(date + "T00:00:00");
+          formattedDate = format(dateObj, "dd MMM yyyy (EEEE)");
+        } catch {
+          formattedDate = date;
+        }
+
+        // Check if we need a new page
+        if (yPos > pageHeight - 50) {
+          doc.addPage();
+          currentPage++;
+          addHeader();
+          yPos = 30;
+        }
+
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...primaryColor);
+        doc.text(formattedDate, margin, yPos);
+        yPos += 4;
+
+        // Build table rows for this date
+        const dateRows: string[][] = [];
+        let dayMorningTotal = 0;
+        let dayEveningTotal = 0;
+
+        // Sort cattle by tag number for consistent display
+        const cattleIds = Object.keys(dateData).sort((a, b) => {
+          return (dateData[a].tagNumber || "").localeCompare(dateData[b].tagNumber || "");
+        });
+
+        for (const cattleId of cattleIds) {
+          const data = dateData[cattleId];
+          const total = data.morning + data.evening;
+          dayMorningTotal += data.morning;
+          dayEveningTotal += data.evening;
+          dateRows.push([
+            data.cattleName,
+            data.morning > 0 ? `${data.morning.toFixed(1)} L` : "-",
+            data.evening > 0 ? `${data.evening.toFixed(1)} L` : "-",
+            `${total.toFixed(1)} L`
+          ]);
+        }
+
+        // Add totals row
+        dateRows.push([
+          "TOTAL",
+          `${dayMorningTotal.toFixed(1)} L`,
+          `${dayEveningTotal.toFixed(1)} L`,
+          `${(dayMorningTotal + dayEveningTotal).toFixed(1)} L`
+        ]);
+
+        autoTable(doc, {
+          startY: yPos,
+          head: [["Cattle", "Morning", "Evening", "Day Total"]],
+          body: dateRows,
+          margin: { left: margin, right: margin },
+          headStyles: {
+            fillColor: secondaryColor,
+            textColor: [255, 255, 255],
+            fontStyle: "bold",
+            fontSize: 7,
+            cellPadding: 2,
+          },
+          bodyStyles: {
+            textColor: darkColor,
+            fontSize: 7,
+            cellPadding: 2,
+          },
+          alternateRowStyles: {
+            fillColor: [248, 250, 252],
+          },
+          columnStyles: {
+            0: { cellWidth: 60 },
+            1: { cellWidth: 30, halign: "right" },
+            2: { cellWidth: 30, halign: "right" },
+            3: { cellWidth: 35, halign: "right", fontStyle: "bold" },
+          },
+          didDrawCell: (data) => {
+            // Bold the totals row
+            if (data.row.index === dateRows.length - 1) {
+              doc.setFont("helvetica", "bold");
+            }
+          },
+          didDrawPage: () => {
+            addFooter();
+          },
+        });
+
+        yPos = (doc as any).lastAutoTable.finalY + 8;
+      }
+
+      continue; // Skip the default table rendering for Milk Production
+    }
 
     const headers = config.columns.map(c => c.label);
     const rows = tableData.data.map((row: any) => 
