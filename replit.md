@@ -34,6 +34,12 @@ supabase/      - Supabase configuration
 - Implementation in `src/hooks/useInventoryData.ts` using `logFeedPurchase` from `useExpenseAutomation`
 - Duplicate prevention via reference-based checking
 
+## Performance Optimizations (Jan 2026)
+- **Code Splitting**: All pages lazy-loaded with React.lazy() - initial bundle reduced from 2.4MB to 585KB
+- **Query Caching**: TanStack Query configured with 5-min staleTime, 30-min cache
+- **Reduced Refetches**: Disabled refetch on window focus, single retry on failure
+- **Suspense Loading**: PageLoader spinner shown during chunk loading
+
 ## Invoice Enhancements (Jan 2026)
 - Invoice table shows "Rate" instead of "Unit Price" (e.g., ₹50.00/litre)
 - "Total Qty" column displays quantity with units (e.g., "10.00 litres")
