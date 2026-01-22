@@ -115,6 +115,15 @@ settings.setUseWideViewPort(true);
 settings.setLoadWithOverviewMode(true);
 ```
 
+**PDF Download/Preview in Capacitor** (Jan 2026):
+- Invoice PDF uses native Share functionality on Capacitor
+- Detects native platform via `window.Capacitor.isNativePlatform()`
+- Uses `Capacitor.Plugins.Filesystem` to save PDF to cache
+- Uses `Capacitor.Plugins.Share` to open/share the PDF
+- Falls back to browser download if plugins unavailable
+- Web browser behavior unchanged (uses jsPDF `doc.save()`)
+- **Required Capacitor plugins**: `@capacitor/filesystem`, `@capacitor/share`
+
 ## Supabase Keep-Alive (Jan 2026)
 GitHub Actions workflow runs daily to prevent Supabase from pausing after 7 days of inactivity.
 
