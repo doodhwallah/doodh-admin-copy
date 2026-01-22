@@ -30,27 +30,46 @@ async function handleCapacitorPDF(doc: jsPDF, fileName: string): Promise<void> {
     const Filesystem = Capacitor?.Plugins?.Filesystem;
     const Share = Capacitor?.Plugins?.Share;
     
-    if (!Filesystem || !Share) {
-      throw new Error("Capacitor plugins not available");
+    if (Filesystem && Share) {
+      const pdfBase64 = doc.output("datauristring").split(",")[1];
+      
+      const result = await Filesystem.writeFile({
+        path: fileName,
+        data: pdfBase64,
+        directory: "CACHE",
+      });
+      
+      await Share.share({
+        title: fileName,
+        url: result.uri,
+        dialogTitle: "Share Invoice PDF",
+      });
+      return;
     }
     
-    const pdfBase64 = doc.output("datauristring").split(",")[1];
+    // Fallback: Use blob URL and open in new window/tab
+    const pdfBlob = doc.output("blob");
+    const blobUrl = URL.createObjectURL(pdfBlob);
     
-    // Directory.Cache = 'CACHE'
-    const result = await Filesystem.writeFile({
-      path: fileName,
-      data: pdfBase64,
-      directory: "CACHE",
-    });
+    // Try to open in new window (works in some Android WebViews)
+    const newWindow = window.open(blobUrl, "_blank");
     
-    await Share.share({
-      title: fileName,
-      url: result.uri,
-      dialogTitle: "Share Invoice PDF",
-    });
+    if (!newWindow) {
+      // If popup blocked, create download link
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = fileName;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    
+    // Clean up blob URL after a delay
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
   } catch (error) {
     devError("Capacitor PDF error:", error);
-    // Fallback for web or if plugins fail
+    // Last resort fallback
     doc.save(fileName);
   }
 }
