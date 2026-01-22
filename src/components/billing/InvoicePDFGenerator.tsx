@@ -62,6 +62,7 @@ interface DeliveryItem {
   unit_price: number;
   total_amount: number;
   delivery_date: string;
+  unit: string;
 }
 
 // Type for Supabase delivery query result
@@ -71,7 +72,7 @@ interface DeliveryQueryResult {
     quantity: number;
     unit_price: number;
     total_amount: number;
-    product: { name: string } | null;
+    product: { name: string; unit: string } | null;
   }> | null;
 }
 
@@ -150,7 +151,7 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
             quantity,
             unit_price,
             total_amount,
-            product:product_id (name)
+            product:product_id (name, unit)
           )
         `)
         .eq("customer_id", invoice.customer_id)
@@ -169,6 +170,7 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
             unit_price: item.unit_price,
             total_amount: item.total_amount,
             delivery_date: delivery.delivery_date,
+            unit: item.product?.unit || "unit",
           });
         });
       });
@@ -351,7 +353,15 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
       // Items table
       if (items.length > 0) {
         // Group items by product and sum quantities
-        const groupedItems = items.reduce((acc: any, item) => {
+        interface GroupedItem {
+          product_name: string;
+          quantity: number;
+          unit_price: number;
+          total_amount: number;
+          unit: string;
+          delivery_count: number;
+        }
+        const groupedItems = items.reduce((acc: Record<string, GroupedItem>, item) => {
           const key = item.product_name;
           if (!acc[key]) {
             acc[key] = {
@@ -359,24 +369,27 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
               quantity: 0,
               unit_price: item.unit_price,
               total_amount: 0,
+              unit: item.unit,
+              delivery_count: 0,
             };
           }
           acc[key].quantity += item.quantity;
           acc[key].total_amount += item.total_amount;
+          acc[key].delivery_count += 1;
           return acc;
         }, {});
 
-        const tableData = Object.values(groupedItems).map((item: any, index: number) => [
+        const tableData = Object.values(groupedItems).map((item, index) => [
           index + 1,
           item.product_name,
-          item.quantity.toFixed(2),
-          formatIndianCurrency(item.unit_price),
+          `${item.quantity.toFixed(2)} ${item.unit}`,
+          `${formatIndianCurrency(item.unit_price)}/${item.unit}`,
           formatIndianCurrency(item.total_amount),
         ]);
 
         autoTable(doc, {
           startY: yPos,
-          head: [["#", "Product", "Qty", "Unit Price", "Amount"]],
+          head: [["#", "Product", "Total Qty", "Rate", "Amount"]],
           body: tableData,
           margin: { left: margin, right: margin },
           headStyles: {
@@ -397,13 +410,20 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
           columnStyles: {
             0: { cellWidth: 12, halign: "center" },
             1: { cellWidth: "auto" },
-            2: { cellWidth: 25, halign: "right" },
-            3: { cellWidth: 30, halign: "right" },
-            4: { cellWidth: 30, halign: "right" },
+            2: { cellWidth: 30, halign: "right" },
+            3: { cellWidth: 35, halign: "right" },
+            4: { cellWidth: 35, halign: "right" },
           },
         });
 
-        yPos = (doc as any).lastAutoTable.finalY + 10;
+        // Add delivery summary below the table
+        yPos = (doc as any).lastAutoTable.finalY + 5;
+        const totalDeliveries = Object.values(groupedItems).reduce((sum, item) => sum + item.delivery_count, 0);
+        doc.setFontSize(8);
+        doc.setTextColor(...darkColor);
+        doc.setFont("helvetica", "italic");
+        doc.text(`* Based on ${totalDeliveries} deliveries during billing period`, margin, yPos);
+        yPos += 8;
       } else {
         // No items - show period summary
         doc.setFontSize(10);
