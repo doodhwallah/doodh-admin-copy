@@ -145,10 +145,6 @@ const tableConfigs: TableConfig[] = [
     columns: [{ key: "name", label: "Name" }, { key: "template_type", label: "Type" }, { key: "subject", label: "Subject" }, { key: "is_active", label: "Active" }] },
   { name: "Shifts", table: "shifts", query: "*", masterData: true, orderField: "created_at",
     columns: [{ key: "name", label: "Name" }, { key: "start_time", label: "Start" }, { key: "end_time", label: "End" }] },
-  { name: "Auth Attempts (Admin)", table: "auth_attempts", query: "*", dateField: "last_attempt", orderField: "last_attempt",
-    columns: [{ key: "phone", label: "Phone" }, { key: "failed_count", label: "Failed" }, { key: "last_attempt", label: "Last Attempt" }, { key: "locked_until", label: "Locked Until" }] },
-  { name: "Customer Auth Attempts", table: "customer_auth_attempts", query: "*", dateField: "last_attempt", orderField: "last_attempt",
-    columns: [{ key: "phone", label: "Phone" }, { key: "failed_count", label: "Failed" }, { key: "last_attempt", label: "Last Attempt" }, { key: "locked_until", label: "Locked Until" }] },
 ];
 
 async function fetchAllData(timeRange: TimeRange): Promise<ExportResult> {
@@ -583,15 +579,22 @@ export function DataExportDialog() {
               Expenses, Health Records, Breeding Records, Feed Inventory, Feed Consumption, Products, Price Rules, 
               Routes, Route Stops, Bottles, Customer Bottles, Bottle Transactions, Customer Ledger, Equipment, 
               Maintenance, Settings, User Profiles, User Roles, Activity Logs, Notifications, Notification Templates, 
-              Shifts, Auth Attempts
+              Shifts
             </p>
           </div>
 
           {exportResult && exportResult.failedTables.length > 0 && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                Failed to export: {exportResult.failedTables.join(", ")}
+              <AlertDescription className="space-y-1">
+                <p className="font-medium">Failed to export {exportResult.failedTables.length} table(s):</p>
+                <ul className="text-xs list-disc list-inside">
+                  {exportResult.tables
+                    .filter(t => t.error)
+                    .map((t, i) => (
+                      <li key={i}>{t.name}: {t.error}</li>
+                    ))}
+                </ul>
               </AlertDescription>
             </Alert>
           )}
