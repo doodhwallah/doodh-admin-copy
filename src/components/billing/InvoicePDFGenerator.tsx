@@ -22,6 +22,22 @@ function formatIndianCurrency(amount: number): string {
   return amount < 0 ? `-₹${formatted}` : `₹${formatted}`;
 }
 
+async function loadLogoAsBase64(): Promise<string | null> {
+  try {
+    const response = await fetch('/logo.png');
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 interface DairySettings {
   dairy_name: string;
   address: string | null;
@@ -175,49 +191,65 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
       const darkColor: [number, number, number] = [30, 41, 59]; // Slate-800
       const lightBg: [number, number, number] = [248, 250, 252]; // Slate-50
 
+      // Load logo
+      const logoBase64 = await loadLogoAsBase64();
+
       // Header background with gradient effect
       doc.setFillColor(...primaryColor);
-      doc.rect(0, 0, pageWidth, 55, "F");
+      doc.rect(0, 0, pageWidth, 60, "F");
       
       // Decorative accent stripe
       doc.setFillColor(...secondaryColor);
-      doc.rect(0, 55, pageWidth, 3, "F");
+      doc.rect(0, 60, pageWidth, 3, "F");
 
-      // Company name
+      // Add logo on the left
+      const logoSize = 40;
+      const logoX = margin;
+      const logoY = 10;
+      if (logoBase64) {
+        doc.addImage(logoBase64, 'PNG', logoX, logoY, logoSize, logoSize);
+      }
+
+      // Company name (positioned after logo)
+      const textStartX = logoBase64 ? margin + logoSize + 8 : margin;
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(24);
+      doc.setFontSize(22);
       doc.setFont("helvetica", "bold");
-      doc.text(settings.dairy_name, margin, 25);
+      doc.text(settings.dairy_name, textStartX, 28);
 
       // Company tagline
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.text("Fresh Dairy Products Delivered Daily", margin, 33);
+      doc.text("Fresh Dairy Delivered", textStartX, 36);
 
       // Company contact info
-      doc.setFontSize(9);
+      doc.setFontSize(8);
       const contactParts: string[] = [];
       if (settings.phone) contactParts.push(`Tel: ${settings.phone}`);
       if (settings.email) contactParts.push(`Email: ${settings.email}`);
-      if (settings.address) contactParts.push(settings.address);
-      doc.text(contactParts.join(" | ") || "Premium Quality Dairy Products", margin, 42);
+      if (contactParts.length > 0) {
+        doc.text(contactParts.join(" | "), textStartX, 44);
+      }
+      if (settings.address) {
+        doc.text(settings.address, textStartX, 51);
+      }
 
       // Invoice badge on the right
       doc.setFillColor(255, 255, 255);
-      doc.roundedRect(pageWidth - margin - 55, 12, 55, 30, 3, 3, "F");
+      doc.roundedRect(pageWidth - margin - 55, 15, 55, 32, 3, 3, "F");
       
       doc.setTextColor(...primaryColor);
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
-      doc.text("INVOICE", pageWidth - margin - 27.5, 24, { align: "center" });
+      doc.text("INVOICE", pageWidth - margin - 27.5, 27, { align: "center" });
       
       doc.setTextColor(...darkColor);
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
-      doc.text(invoice.invoice_number, pageWidth - margin - 27.5, 32, { align: "center" });
+      doc.text(invoice.invoice_number, pageWidth - margin - 27.5, 36, { align: "center" });
 
       // Invoice details section
-      let yPos = 70;
+      let yPos = 75;
 
       // Customer and invoice info boxes
       // Left box - Bill To
