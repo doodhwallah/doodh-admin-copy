@@ -13,6 +13,15 @@ import {
 } from "@/components/ui/dialog";
 import { devError } from "@/lib/utils";
 
+function formatIndianCurrency(amount: number): string {
+  const absAmount = Math.abs(amount);
+  const formatted = absAmount.toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+  return amount < 0 ? `-₹${formatted}` : `₹${formatted}`;
+}
+
 interface DairySettings {
   dairy_name: string;
   address: string | null;
@@ -329,8 +338,8 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
           index + 1,
           item.product_name,
           item.quantity.toFixed(2),
-          `₹${item.unit_price.toFixed(2)}`,
-          `₹${item.total_amount.toFixed(2)}`,
+          formatIndianCurrency(item.unit_price),
+          formatIndianCurrency(item.total_amount),
         ]);
 
         autoTable(doc, {
@@ -387,17 +396,18 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
       
       doc.setFont("helvetica", "normal");
       doc.text("Subtotal:", summaryLabelX, summaryY);
-      doc.text(`₹${Number(invoice.total_amount).toFixed(2)}`, summaryValueX, summaryY, { align: "right" });
+      doc.text(formatIndianCurrency(Number(invoice.total_amount)), summaryValueX, summaryY, { align: "right" });
       
       summaryY += 8;
       doc.text("Discount:", summaryLabelX, summaryY);
       doc.setTextColor(...secondaryColor);
-      doc.text(`-₹${Number(invoice.discount_amount).toFixed(2)}`, summaryValueX, summaryY, { align: "right" });
+      const discountAmount = Math.abs(Number(invoice.discount_amount));
+      doc.text(discountAmount > 0 ? `-${formatIndianCurrency(discountAmount)}` : formatIndianCurrency(0), summaryValueX, summaryY, { align: "right" });
       
       summaryY += 8;
       doc.setTextColor(...darkColor);
       doc.text("Tax:", summaryLabelX, summaryY);
-      doc.text(`₹${Number(invoice.tax_amount).toFixed(2)}`, summaryValueX, summaryY, { align: "right" });
+      doc.text(formatIndianCurrency(Number(invoice.tax_amount)), summaryValueX, summaryY, { align: "right" });
 
       // Divider
       summaryY += 5;
@@ -405,17 +415,17 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
       doc.setLineWidth(0.5);
       doc.line(summaryLabelX, summaryY, summaryValueX, summaryY);
 
-      // Total
+      // Grand Total
       summaryY += 10;
       doc.setFillColor(...primaryColor);
       doc.roundedRect(summaryLabelX - 2, summaryY - 6, summaryWidth - 6, 14, 2, 2, "F");
       
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(11);
+      doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text("TOTAL:", summaryLabelX + 3, summaryY + 2);
-      doc.setFontSize(12);
-      doc.text(`₹${Number(invoice.final_amount).toFixed(2)}`, summaryValueX - 3, summaryY + 2, { align: "right" });
+      doc.text("Grand Total:", summaryLabelX + 3, summaryY + 2);
+      doc.setFontSize(11);
+      doc.text(formatIndianCurrency(Number(invoice.final_amount)), summaryValueX - 3, summaryY + 2, { align: "right" });
 
       // Payment info box
       yPos += 65;
@@ -426,13 +436,13 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
         doc.setTextColor(16, 185, 129);
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
-        doc.text("PAYMENT RECEIVED", margin + 10, yPos + 9);
-        doc.text(`₹${Number(invoice.paid_amount).toFixed(2)}`, margin + 80, yPos + 9);
+        doc.text("Amount Paid:", margin + 10, yPos + 9);
+        doc.text(formatIndianCurrency(Number(invoice.paid_amount)), margin + 55, yPos + 9);
         
         const balance = Number(invoice.final_amount) - Number(invoice.paid_amount);
         if (balance > 0) {
           doc.setTextColor(239, 68, 68);
-          doc.text(`Balance Due: ₹${balance.toFixed(2)}`, pageWidth - margin - 10, yPos + 9, { align: "right" });
+          doc.text(`Balance Due: ${formatIndianCurrency(balance)}`, pageWidth - margin - 10, yPos + 9, { align: "right" });
         }
         
         yPos += 25;
