@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,6 +21,7 @@ type AuthFormData = z.infer<typeof authSchema>;
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
+const ATTEMPT_DEBOUNCE_MS = 1000;
 
 interface AttemptState {
   count: number;
@@ -56,8 +57,20 @@ export default function CustomerAuth() {
   const [loading, setLoading] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
   const [attemptStateLocal, setAttemptStateLocal] = useState<AttemptState>(getAttemptState);
+  const lastAttemptRef = useRef<number>(0);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const isLockedOut = attemptStateLocal.lockedUntil !== null && Date.now() < attemptStateLocal.lockedUntil;
+
+  useEffect(() => {
+    if (!isLockedOut) return;
+    const timer = setInterval(() => {
+      const state = getAttemptState();
+      setAttemptStateLocal(state);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isLockedOut]);
 
   const loginForm = useForm<AuthFormData>({
     resolver: zodResolver(authSchema),
@@ -87,7 +100,7 @@ export default function CustomerAuth() {
   }, []);
 
   const handleLogin = async (values: AuthFormData) => {
-    // Check for lockout
+    // Check for lockout first
     const currentAttempts = getAttemptState();
     if (currentAttempts.lockedUntil && Date.now() < currentAttempts.lockedUntil) {
       const remainingMins = Math.ceil((currentAttempts.lockedUntil - Date.now()) / 60000);
@@ -98,6 +111,13 @@ export default function CustomerAuth() {
       });
       return;
     }
+
+    // Check for debounce
+    const now = Date.now();
+    if (now - lastAttemptRef.current < ATTEMPT_DEBOUNCE_MS) {
+      return;
+    }
+    lastAttemptRef.current = now;
 
     setLoading(true);
     setPendingApproval(false);
@@ -145,10 +165,10 @@ export default function CustomerAuth() {
         
         navigate('/customer/dashboard');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message || "Something went wrong",
+        description: error instanceof Error ? error.message : "Something went wrong",
         variant: "destructive",
       });
     } finally {
@@ -188,10 +208,10 @@ export default function CustomerAuth() {
           description: "Your account is pending admin approval. We'll notify you once approved.",
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message || "Something went wrong",
+        description: error instanceof Error ? error.message : "Something went wrong",
         variant: "destructive",
       });
     } finally {
@@ -293,9 +313,11 @@ export default function CustomerAuth() {
                         )}
                       />
 
-                      <Button type="submit" className="w-full" disabled={loading}>
-                        {loading ? 'Logging in...' : 'Login'}
-                        <ArrowRight className="ml-2 h-4 w-4" />
+                      <Button type="submit" className="w-full" disabled={loading || isLockedOut}>
+                        {isLockedOut 
+                          ? `Locked (${Math.ceil((attemptStateLocal.lockedUntil! - Date.now()) / 60000)} min)`
+                          : loading ? 'Logging in...' : 'Login'}
+                        {!isLockedOut && <ArrowRight className="ml-2 h-4 w-4" />}
                       </Button>
                     </form>
                   </Form>
