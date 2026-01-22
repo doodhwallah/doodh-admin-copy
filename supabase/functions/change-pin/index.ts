@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,22 +7,14 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('Missing environment variables')
-      return new Response(
-        JSON.stringify({ error: 'Server configuration error' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
@@ -37,8 +29,12 @@ serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '')
     
-    // Use admin client to verify the token directly
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token)
+    // Create client with user's token in headers (same pattern as other working functions)
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } }
+    })
+
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
     
     if (userError || !user) {
       console.error('Auth error:', userError)
@@ -48,26 +44,8 @@ serve(async (req) => {
       )
     }
 
-    // Safely parse request body
-    let body: { currentPin?: string; newPin?: string }
-    try {
-      const text = await req.text()
-      if (!text || text.trim() === '') {
-        return new Response(
-          JSON.stringify({ error: 'Request body is empty' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-      body = JSON.parse(text)
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError)
-      return new Response(
-        JSON.stringify({ error: 'Invalid JSON in request body' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const { currentPin, newPin } = body
+    // Parse request body
+    const { currentPin, newPin } = await req.json()
 
     if (!currentPin || !newPin) {
       return new Response(
@@ -141,8 +119,6 @@ serve(async (req) => {
 
     if (authError) {
       console.error('Auth update error:', authError)
-      // Don't fail the whole operation if auth update fails
-      // The PIN hash is already updated
     }
 
     console.log(`PIN updated successfully for user ${user.id}`)
