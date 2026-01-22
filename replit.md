@@ -96,6 +96,25 @@ The app is now fully responsive and optimized for both web and Android TWA:
 2. Build the app: `npm run build`
 3. Use the `dist/` folder with Android Studio's TWA builder
 
+### Capacitor Native App Support (Jan 2026)
+The app detects when running inside a Capacitor native app and applies targeted styles:
+
+**Detection**: Uses official `Capacitor.isNativePlatform()` API (not user agent heuristics)
+- Adds `capacitor-native` class to html and body elements
+- Does NOT affect mobile browser or desktop browser behavior
+
+**Native-only CSS** (in `src/index.css`):
+- Text size adjustment for proper font rendering
+- Safe area inset handling for notched devices
+- Bottom nav padding for safe area
+
+**For Capacitor Android issues**, configure in your Capacitor project:
+```java
+// MainActivity.java - Add to WebView settings
+settings.setUseWideViewPort(true);
+settings.setLoadWithOverviewMode(true);
+```
+
 ## Supabase Keep-Alive (Jan 2026)
 GitHub Actions workflow runs daily to prevent Supabase from pausing after 7 days of inactivity.
 
