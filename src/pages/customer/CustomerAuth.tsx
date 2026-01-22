@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,9 +19,43 @@ const authSchema = z.object({
 
 type AuthFormData = z.infer<typeof authSchema>;
 
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
+
+interface AttemptState {
+  count: number;
+  lockedUntil: number | null;
+}
+
+function getAttemptState(): AttemptState {
+  try {
+    const stored = sessionStorage.getItem("customer_auth_attempts");
+    if (stored) {
+      const state = JSON.parse(stored) as AttemptState;
+      if (state.lockedUntil && Date.now() > state.lockedUntil) {
+        sessionStorage.removeItem("customer_auth_attempts");
+        return { count: 0, lockedUntil: null };
+      }
+      return state;
+    }
+  } catch {
+    // Ignore storage errors
+  }
+  return { count: 0, lockedUntil: null };
+}
+
+function setAttemptState(state: AttemptState): void {
+  try {
+    sessionStorage.setItem("customer_auth_attempts", JSON.stringify(state));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 export default function CustomerAuth() {
   const [loading, setLoading] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
+  const [attemptStateLocal, setAttemptStateLocal] = useState<AttemptState>(getAttemptState);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -35,7 +69,36 @@ export default function CustomerAuth() {
     defaultValues: { phone: '', pin: '' },
   });
 
+  const recordFailedAttempt = useCallback(() => {
+    const current = getAttemptState();
+    const newCount = current.count + 1;
+    const newState: AttemptState = {
+      count: newCount,
+      lockedUntil: newCount >= MAX_ATTEMPTS ? Date.now() + LOCKOUT_DURATION_MS : null,
+    };
+    setAttemptState(newState);
+    setAttemptStateLocal(newState);
+    return newState;
+  }, []);
+
+  const resetAttempts = useCallback(() => {
+    sessionStorage.removeItem("customer_auth_attempts");
+    setAttemptStateLocal({ count: 0, lockedUntil: null });
+  }, []);
+
   const handleLogin = async (values: AuthFormData) => {
+    // Check for lockout
+    const currentAttempts = getAttemptState();
+    if (currentAttempts.lockedUntil && Date.now() < currentAttempts.lockedUntil) {
+      const remainingMins = Math.ceil((currentAttempts.lockedUntil - Date.now()) / 60000);
+      toast({
+        title: "Account Temporarily Locked",
+        description: `Too many failed attempts. Try again in ${remainingMins} minute(s).`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     setPendingApproval(false);
 
@@ -55,9 +118,13 @@ export default function CustomerAuth() {
             variant: "default",
           });
         } else {
+          const newState = recordFailedAttempt();
+          const remaining = MAX_ATTEMPTS - newState.count;
           toast({
             title: "Login Failed",
-            description: data.error || "Invalid credentials",
+            description: remaining > 0 
+              ? `Invalid credentials. ${remaining} attempt(s) remaining.`
+              : "Account locked for 15 minutes due to too many failed attempts.",
             variant: "destructive",
           });
         }
@@ -65,6 +132,7 @@ export default function CustomerAuth() {
       }
 
       if (data.session) {
+        resetAttempts();
         await supabase.auth.setSession({
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token
