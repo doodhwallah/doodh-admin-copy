@@ -582,7 +582,8 @@ export function DataExportDialog() {
               Deliveries, Delivery Items, Invoices, Payments, Employees, Attendance, Employee Shifts, Payroll, 
               Expenses, Health Records, Breeding Records, Feed Inventory, Feed Consumption, Products, Price Rules, 
               Routes, Route Stops, Bottles, Customer Bottles, Bottle Transactions, Customer Ledger, Equipment, 
-              Maintenance, Settings, User Profiles, User Roles, Activity Logs, Notifications, Shifts
+              Maintenance, Settings, User Profiles, User Roles, Activity Logs, Notifications, Notification Templates, 
+              Shifts, Auth Attempts
             </p>
           </div>
 
