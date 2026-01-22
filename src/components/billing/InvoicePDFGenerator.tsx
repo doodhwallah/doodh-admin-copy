@@ -13,6 +13,48 @@ import {
 } from "@/components/ui/dialog";
 import { devError } from "@/lib/utils";
 
+function isCapacitorNative(): boolean {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const Capacitor = (window as any).Capacitor;
+    return Capacitor?.isNativePlatform?.() === true;
+  } catch {
+    return false;
+  }
+}
+
+async function handleCapacitorPDF(doc: jsPDF, fileName: string): Promise<void> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const Capacitor = (window as any).Capacitor;
+    const Filesystem = Capacitor?.Plugins?.Filesystem;
+    const Share = Capacitor?.Plugins?.Share;
+    
+    if (!Filesystem || !Share) {
+      throw new Error("Capacitor plugins not available");
+    }
+    
+    const pdfBase64 = doc.output("datauristring").split(",")[1];
+    
+    // Directory.Cache = 'CACHE'
+    const result = await Filesystem.writeFile({
+      path: fileName,
+      data: pdfBase64,
+      directory: "CACHE",
+    });
+    
+    await Share.share({
+      title: fileName,
+      url: result.uri,
+      dialogTitle: "Share Invoice PDF",
+    });
+  } catch (error) {
+    devError("Capacitor PDF error:", error);
+    // Fallback for web or if plugins fail
+    doc.save(fileName);
+  }
+}
+
 function formatIndianCurrency(amount: number): string {
   const absAmount = Math.abs(amount);
   const formatted = absAmount.toLocaleString('en-IN', {
@@ -534,13 +576,23 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
         { align: "center" }
       );
 
+      const fileName = `Invoice_${invoice.invoice_number}_${customer.name.replace(/\s+/g, "_")}.pdf`;
+      
       if (action === "download") {
-        doc.save(`Invoice_${invoice.invoice_number}_${customer.name.replace(/\s+/g, "_")}.pdf`);
+        if (isCapacitorNative()) {
+          await handleCapacitorPDF(doc, fileName);
+        } else {
+          doc.save(fileName);
+        }
         onGenerated?.();
       } else {
-        const dataUrl = doc.output("datauristring");
-        setPdfDataUrl(dataUrl);
-        setPreviewOpen(true);
+        if (isCapacitorNative()) {
+          await handleCapacitorPDF(doc, fileName);
+        } else {
+          const dataUrl = doc.output("datauristring");
+          setPdfDataUrl(dataUrl);
+          setPreviewOpen(true);
+        }
       }
     } catch (error) {
       devError("Error generating PDF:", error);
