@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
+import { DataExportDialog } from "@/components/export/DataExportDialog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { devError } from "@/lib/utils";
@@ -41,6 +42,7 @@ export default function ReportsPage() {
   const [expenseData, setExpenseData] = useState<any[]>([]);
   const [cattleStats, setCattleStats] = useState<any>({});
   const [customerStats, setCustomerStats] = useState<any>({});
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchReportData();
@@ -155,10 +157,12 @@ export default function ReportsPage() {
         description="Comprehensive insights into your dairy operations"
         icon={BarChart3}
       >
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" onClick={() => setExportDialogOpen(true)}>
           <Download className="h-4 w-4" /> Export
         </Button>
       </PageHeader>
+
+      <DataExportDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} />
 
       {/* Key Metrics */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

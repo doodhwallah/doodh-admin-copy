@@ -670,8 +670,15 @@ async function generatePDF(result: ExportResult, timeRange: TimeRange): Promise<
   doc.save(`DoodhWallah_Backup_${rangeFileName}_${timestamp}.pdf`);
 }
 
-export function DataExportDialog() {
-  const [open, setOpen] = useState(false);
+interface DataExportDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function DataExportDialog({ open: externalOpen, onOpenChange }: DataExportDialogProps = {}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = externalOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [timeRange, setTimeRange] = useState<TimeRange>("monthly");
   const [exportFormat, setExportFormat] = useState<ExportFormat>("pdf");
   const [exporting, setExporting] = useState(false);
