@@ -386,85 +386,180 @@ export default function ProductionPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                <div className="grid grid-cols-12 gap-2 px-2 text-sm font-medium text-muted-foreground">
-                  <div className="col-span-3">Cattle</div>
-                  <div className="col-span-2">Quantity (L)</div>
-                  <div className="col-span-2">Fat %</div>
-                  <div className="col-span-2">SNF %</div>
-                  <div className="col-span-3">Notes</div>
-                </div>
-                {cattle.map((c) => (
-                  <div key={c.id} className="grid grid-cols-12 gap-2 items-center p-2 rounded-lg hover:bg-muted/50">
-                    <div className="col-span-3 flex items-center gap-2">
-                      <div>
-                        <span className="font-medium">{c.tag_number}</span>
-                        {c.name && <span className="text-muted-foreground ml-1">({c.name})</span>}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => handleOpenCattleHistory(c.id, `${c.tag_number}${c.name ? ` (${c.name})` : ""}`)}
-                      >
-                        <History className="h-3 w-3" />
-                      </Button>
-                    </div>
-                    <div className="col-span-2">
-                      <Input
-                        type="number"
-                        step="0.1"
-                        placeholder="0.0"
-                        value={entries[c.id]?.quantity || ""}
-                        onChange={(e) =>
-                          setEntries({
-                            ...entries,
-                            [c.id]: { ...entries[c.id], quantity: e.target.value },
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Input
-                        type="number"
-                        step="0.1"
-                        placeholder="0.0"
-                        value={entries[c.id]?.fat || ""}
-                        onChange={(e) =>
-                          setEntries({
-                            ...entries,
-                            [c.id]: { ...entries[c.id], fat: e.target.value },
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Input
-                        type="number"
-                        step="0.1"
-                        placeholder="0.0"
-                        value={entries[c.id]?.snf || ""}
-                        onChange={(e) =>
-                          setEntries({
-                            ...entries,
-                            [c.id]: { ...entries[c.id], snf: e.target.value },
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="col-span-3">
-                      <Input
-                        placeholder="Notes"
-                        value={entries[c.id]?.notes || ""}
-                        onChange={(e) =>
-                          setEntries({
-                            ...entries,
-                            [c.id]: { ...entries[c.id], notes: e.target.value },
-                          })
-                        }
-                      />
-                    </div>
+                {/* Desktop: Grid layout */}
+                <div className="hidden md:block">
+                  <div className="grid grid-cols-12 gap-2 px-2 text-sm font-medium text-muted-foreground mb-2">
+                    <div className="col-span-3">Cattle</div>
+                    <div className="col-span-2">Quantity (L)</div>
+                    <div className="col-span-2">Fat %</div>
+                    <div className="col-span-2">SNF %</div>
+                    <div className="col-span-3">Notes</div>
                   </div>
-                ))}
+                  {cattle.map((c) => (
+                    <div key={c.id} className="grid grid-cols-12 gap-2 items-center p-2 rounded-lg hover:bg-muted/50">
+                      <div className="col-span-3 flex items-center gap-2">
+                        <div>
+                          <span className="font-medium">{c.tag_number}</span>
+                          {c.name && <span className="text-muted-foreground ml-1">({c.name})</span>}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => handleOpenCattleHistory(c.id, `${c.tag_number}${c.name ? ` (${c.name})` : ""}`)}
+                        >
+                          <History className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <div className="col-span-2">
+                        <Input
+                          type="number"
+                          step="0.1"
+                          placeholder="0.0"
+                          value={entries[c.id]?.quantity || ""}
+                          onChange={(e) =>
+                            setEntries({
+                              ...entries,
+                              [c.id]: { ...entries[c.id], quantity: e.target.value },
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Input
+                          type="number"
+                          step="0.1"
+                          placeholder="0.0"
+                          value={entries[c.id]?.fat || ""}
+                          onChange={(e) =>
+                            setEntries({
+                              ...entries,
+                              [c.id]: { ...entries[c.id], fat: e.target.value },
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Input
+                          type="number"
+                          step="0.1"
+                          placeholder="0.0"
+                          value={entries[c.id]?.snf || ""}
+                          onChange={(e) =>
+                            setEntries({
+                              ...entries,
+                              [c.id]: { ...entries[c.id], snf: e.target.value },
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="col-span-3">
+                        <Input
+                          placeholder="Notes"
+                          value={entries[c.id]?.notes || ""}
+                          onChange={(e) =>
+                            setEntries({
+                              ...entries,
+                              [c.id]: { ...entries[c.id], notes: e.target.value },
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Mobile: Card layout */}
+                <div className="md:hidden space-y-3">
+                  {cattle.map((c) => (
+                    <div key={c.id} className="border rounded-lg p-3 space-y-3 bg-card">
+                      {/* Cattle name row */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Droplets className="h-4 w-4 text-primary" />
+                          <span className="font-semibold">{c.tag_number}</span>
+                          {c.name && <span className="text-muted-foreground text-sm">({c.name})</span>}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleOpenCattleHistory(c.id, `${c.tag_number}${c.name ? ` (${c.name})` : ""}`)}
+                        >
+                          <History className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      {/* Primary: Quantity input (large) */}
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Milk Quantity (Litres)</Label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          placeholder="0.0"
+                          className="text-lg h-12 font-semibold"
+                          value={entries[c.id]?.quantity || ""}
+                          onChange={(e) =>
+                            setEntries({
+                              ...entries,
+                              [c.id]: { ...entries[c.id], quantity: e.target.value },
+                            })
+                          }
+                        />
+                      </div>
+
+                      {/* Secondary: Fat, SNF, Notes in compact row */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Fat %</Label>
+                          <Input
+                            type="number"
+                            step="0.1"
+                            placeholder="0.0"
+                            className="text-sm"
+                            value={entries[c.id]?.fat || ""}
+                            onChange={(e) =>
+                              setEntries({
+                                ...entries,
+                                [c.id]: { ...entries[c.id], fat: e.target.value },
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">SNF %</Label>
+                          <Input
+                            type="number"
+                            step="0.1"
+                            placeholder="0.0"
+                            className="text-sm"
+                            value={entries[c.id]?.snf || ""}
+                            onChange={(e) =>
+                              setEntries({
+                                ...entries,
+                                [c.id]: { ...entries[c.id], snf: e.target.value },
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Notes</Label>
+                          <Input
+                            placeholder="..."
+                            className="text-sm"
+                            value={entries[c.id]?.notes || ""}
+                            onChange={(e) =>
+                              setEntries({
+                                ...entries,
+                                [c.id]: { ...entries[c.id], notes: e.target.value },
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
