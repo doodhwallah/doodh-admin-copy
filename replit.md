@@ -36,7 +36,7 @@ supabase/      - Supabase configuration
 
 ## Security Improvements (Jan 2026)
 - **Ledger Race Conditions**: Fixed with per-customer mutex locking in `useLedgerAutomation.ts`
-- **Auth Rate Limiting**: 5 attempts max, 15-minute lockout, 1s debounce in `Auth.tsx`
+- **Auth Rate Limiting**: 5 attempts max, 15-minute lockout, 1s debounce in `Auth.tsx` and `CustomerAuth.tsx`
 - **Role-Based Route Protection**: Route access checks in `DashboardLayout.tsx` using `useUserRole` hook
 - **Pagination**: Added to Customers page (50 items/page with search)
 - **Console Logging**: Replaced all `console.log/error/warn` with `devLog/devError/devWarn` utilities (dev-only)
