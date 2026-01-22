@@ -11,7 +11,6 @@ import {
   Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DataExportDialog } from "@/components/export/DataExportDialog";
 
 const quickActions = [
   {
@@ -78,18 +77,15 @@ export function QuickActionsCard() {
     >
       <Card className="overflow-hidden">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-              <motion.div
-                animate={{ rotate: [0, 15, -15, 0] }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-              >
-                <Zap className="h-5 w-5 text-warning" />
-              </motion.div>
-              Quick Actions
-            </CardTitle>
-            <DataExportDialog />
-          </div>
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+            <motion.div
+              animate={{ rotate: [0, 15, -15, 0] }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+            >
+              <Zap className="h-5 w-5 text-warning" />
+            </motion.div>
+            Quick Actions
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <motion.div 
