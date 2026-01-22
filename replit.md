@@ -34,6 +34,13 @@ supabase/      - Supabase configuration
 - Implementation in `src/hooks/useInventoryData.ts` using `logFeedPurchase` from `useExpenseAutomation`
 - Duplicate prevention via reference-based checking
 
+## Invoice Enhancements (Jan 2026)
+- Invoice table shows "Rate" instead of "Unit Price" (e.g., ₹50.00/litre)
+- "Total Qty" column displays quantity with units (e.g., "10.00 litres")
+- Product units fetched from products table for accurate display
+- Delivery count summary shown below table ("Based on X deliveries during billing period")
+- Grouped by product with accumulated quantities and amounts
+
 ## Security Improvements (Jan 2026)
 - **Ledger Race Conditions**: Fixed with per-customer mutex locking in `useLedgerAutomation.ts`
 - **Auth Rate Limiting**: 5 attempts max, 15-minute lockout, 1s debounce in `Auth.tsx` and `CustomerAuth.tsx`
