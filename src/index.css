@@ -713,3 +713,29 @@ html, body {
     box-shadow: inherit;
   }
 }
+
+/* ========================================
+   Capacitor Native App Specific Styles
+   Only applies when running inside Capacitor Android/iOS native app
+   Uses official Capacitor.isNativePlatform() detection
+   Does NOT affect mobile browser, desktop browser, or in-app WebViews
+   ======================================== */
+
+html.capacitor-native,
+body.capacitor-native {
+  /* Ensure proper font sizing in native WebView */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Safe area handling for notched devices in native app */
+body.capacitor-native {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Ensure bottom nav respects safe area in native app */
+.capacitor-native .mobile-bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom, 8px);
+}
