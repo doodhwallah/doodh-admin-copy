@@ -15,7 +15,18 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -25,6 +36,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Receipt, IndianRupee, Loader2, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { InvoicePDFGenerator } from "@/components/billing/InvoicePDFGenerator";
@@ -111,7 +123,12 @@ export default function BillingPage() {
     discount_amount: "0",
   });
   const [paymentAmount, setPaymentAmount] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [invoiceToDelete, setInvoiceToDelete] = useState<InvoiceWithCustomer | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
+  const { role } = useUserRole();
+  const isAdmin = role === "super_admin";
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -376,6 +393,39 @@ export default function BillingPage() {
     overdue: invoices.filter(i => i.payment_status === "overdue").reduce((sum, i) => sum + (Number(i.final_amount) - Number(i.paid_amount)), 0),
   };
 
+  const handleDeleteInvoice = async () => {
+    if (!invoiceToDelete) return;
+    
+    setDeleting(true);
+    try {
+      // Delete the invoice (cascade will handle related items if FK constraints exist)
+      const { error } = await supabase
+        .from("invoices")
+        .delete()
+        .eq("id", invoiceToDelete.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Invoice deleted",
+        description: `Invoice ${invoiceToDelete.invoice_number} has been deleted.`,
+      });
+
+      setDeleteDialogOpen(false);
+      setInvoiceToDelete(null);
+      fetchData();
+    } catch (error) {
+      devError("Error deleting invoice:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete invoice. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const columns = [
     {
       key: "invoice_number",
@@ -442,19 +492,34 @@ export default function BillingPage() {
       key: "actions",
       header: "Actions",
       render: (item: InvoiceWithCustomer) => (
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1"
-          onClick={() => {
-            setSelectedInvoice(item);
-            setPaymentAmount("");
-            setPaymentDialogOpen(true);
-          }}
-          disabled={item.payment_status === "paid"}
-        >
-          <IndianRupee className="h-3 w-3" /> Pay
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1"
+            onClick={() => {
+              setSelectedInvoice(item);
+              setPaymentAmount("");
+              setPaymentDialogOpen(true);
+            }}
+            disabled={item.payment_status === "paid"}
+          >
+            <IndianRupee className="h-3 w-3" /> Pay
+          </Button>
+          {isAdmin && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={() => {
+                setInvoiceToDelete(item);
+                setDeleteDialogOpen(true);
+              }}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
       ),
     },
   ];
@@ -745,6 +810,29 @@ export default function BillingPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Invoice Confirmation Dialog - Admin Only */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete invoice <strong>{invoiceToDelete?.invoice_number}</strong>?
+              This action cannot be undone and will permanently remove the invoice and its associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteInvoice}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
