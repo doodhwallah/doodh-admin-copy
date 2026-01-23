@@ -124,6 +124,14 @@ settings.setLoadWithOverviewMode(true);
 - Web browser behavior unchanged (uses jsPDF `doc.save()`)
 - **Required Capacitor plugins**: `@capacitor/filesystem`, `@capacitor/share`
 
+**Invoice Print Feature** (Jan 2026):
+- Print button added to invoice generator for native printing
+- Uses iframe-based printing for Android WebView compatibility
+- Creates hidden iframe, populates with formatted HTML invoice
+- Calls print() on iframe window to trigger native print dialog
+- Falls back to window.open if iframe approach fails
+- Works in both web browsers and Capacitor Android apps
+
 ## Supabase Keep-Alive (Jan 2026)
 GitHub Actions workflow runs daily to prevent Supabase from pausing after 7 days of inactivity.
 
