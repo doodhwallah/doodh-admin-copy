@@ -115,22 +115,13 @@ settings.setUseWideViewPort(true);
 settings.setLoadWithOverviewMode(true);
 ```
 
-**PDF Download/Preview in Capacitor** (Jan 2026):
-- Invoice PDF uses native Share functionality on Capacitor
-- Detects native platform via `window.Capacitor.isNativePlatform()`
-- Uses `Capacitor.Plugins.Filesystem` to save PDF to cache
-- Uses `Capacitor.Plugins.Share` to open/share the PDF
-- Falls back to browser download if plugins unavailable
-- Web browser behavior unchanged (uses jsPDF `doc.save()`)
-- **Required Capacitor plugins**: `@capacitor/filesystem`, `@capacitor/share`
-
-**Invoice Print Feature** (Jan 2026):
-- Print button added to invoice generator for native printing
+**Invoice PDF & Print** (Jan 2026):
+- **PDF Download/Preview**: Uses jsPDF with `doc.save()` for download, data URL dialog for preview
+- **Print Feature**: Print button opens native print dialog via iframe-based approach
 - Uses iframe-based printing for Android WebView compatibility
-- Creates hidden iframe, populates with formatted HTML invoice
-- Calls print() on iframe window to trigger native print dialog
 - Falls back to window.open if iframe approach fails
 - Works in both web browsers and Capacitor Android apps
+- For Capacitor apps, Print is recommended (triggers Android print service with Save as PDF option)
 
 ## Supabase Keep-Alive (Jan 2026)
 GitHub Actions workflow runs daily to prevent Supabase from pausing after 7 days of inactivity.
