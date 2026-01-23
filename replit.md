@@ -63,6 +63,19 @@ supabase/      - Supabase configuration
 - **Console Logging**: Replaced all `console.log/error/warn` with `devLog/devError/devWarn` utilities (dev-only)
 - **Error Boundary**: App wrapped with ErrorBoundary component for crash prevention
 - **Error Sanitization**: Sensitive error details filtered via `sanitizeError` utility
+- **CORS Centralization**: Shared CORS utility (`supabase/functions/_shared/cors.ts`) for all Edge Functions
+- **CSP Headers**: Content-Security-Policy, Referrer-Policy, Permissions-Policy in `vercel.json`
+- **API Timeout**: 30-second request timeout via AbortController in Supabase client
+
+### Edge Function CORS Configuration
+Set `ALLOWED_ORIGINS` environment variable in Supabase Dashboard → Edge Functions → Secrets:
+```
+ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+```
+If not set, defaults to `*` (all origins) for development.
+
+### CSP Notes
+The CSP allows `unsafe-inline` and `unsafe-eval` for scripts (required by current tooling). For stricter XSS protection, these can be removed if the app is refactored to use nonces.
 
 ## Data Filtering & Sorting (Jan 2026)
 - **DataFilters Component**: Reusable component (`src/components/common/DataFilters.tsx`) with:
