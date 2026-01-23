@@ -24,13 +24,31 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Receipt, IndianRupee, Loader2 } from "lucide-react";
+import { Receipt, IndianRupee, Loader2, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { InvoicePDFGenerator } from "@/components/billing/InvoicePDFGenerator";
 
 interface Customer {
   id: string;
   name: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  unit: string;
+  base_price: number;
+  is_active: boolean;
+}
+
+interface LineItem {
+  id: string;
+  product_id: string;
+  product_name: string;
+  quantity: string;
+  rate: string;
+  unit: string;
+  amount: number;
 }
 
 interface Invoice {
@@ -54,20 +72,31 @@ interface InvoiceWithCustomer extends Invoice {
   customer: Customer;
 }
 
+const createEmptyLineItem = (): LineItem => ({
+  id: crypto.randomUUID(),
+  product_id: "",
+  product_name: "",
+  quantity: "",
+  rate: "",
+  unit: "",
+  amount: 0,
+});
+
 export default function BillingPage() {
   const [invoices, setInvoices] = useState<InvoiceWithCustomer[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceWithCustomer | null>(null);
+  const [lineItems, setLineItems] = useState<LineItem[]>([createEmptyLineItem()]);
   const [formData, setFormData] = useState({
     customer_id: "",
     billing_period_start: format(new Date(new Date().setDate(1)), "yyyy-MM-dd"),
     billing_period_end: format(new Date(), "yyyy-MM-dd"),
-    total_amount: "",
     discount_amount: "0",
   });
   const [paymentAmount, setPaymentAmount] = useState("");
@@ -81,8 +110,7 @@ export default function BillingPage() {
     setLoading(true);
     
     try {
-      // Fetch customers and invoices in parallel for faster loading
-      const [customerRes, invoiceRes] = await Promise.all([
+      const [customerRes, invoiceRes, productRes] = await Promise.all([
         supabase
           .from("customers")
           .select("id, name")
@@ -94,10 +122,16 @@ export default function BillingPage() {
             *,
             customer:customer_id (id, name)
           `)
-          .order("created_at", { ascending: false })
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("products")
+          .select("id, name, unit, base_price, is_active")
+          .eq("is_active", true)
+          .order("name")
       ]);
 
       setCustomers(customerRes.data || []);
+      setProducts(productRes.data || []);
 
       if (invoiceRes.error) {
         toast({
@@ -123,28 +157,90 @@ export default function BillingPage() {
     return `INV-${year}${month}-${random}`;
   };
 
+  const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
+  const discountAmount = parseFloat(formData.discount_amount) || 0;
+  const finalAmount = subtotal - discountAmount;
+
+  const handleProductChange = (itemId: string, productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    
+    setLineItems(prev => prev.map(item => {
+      if (item.id === itemId) {
+        const qty = parseFloat(item.quantity) || 0;
+        const rate = product.base_price;
+        return {
+          ...item,
+          product_id: productId,
+          product_name: product.name,
+          unit: product.unit,
+          rate: rate.toString(),
+          amount: qty * rate,
+        };
+      }
+      return item;
+    }));
+  };
+
+  const handleQuantityChange = (itemId: string, quantity: string) => {
+    setLineItems(prev => prev.map(item => {
+      if (item.id === itemId) {
+        const qty = parseFloat(quantity) || 0;
+        const rate = parseFloat(item.rate) || 0;
+        return {
+          ...item,
+          quantity,
+          amount: qty * rate,
+        };
+      }
+      return item;
+    }));
+  };
+
+  const handleRateChange = (itemId: string, rate: string) => {
+    setLineItems(prev => prev.map(item => {
+      if (item.id === itemId) {
+        const qty = parseFloat(item.quantity) || 0;
+        const r = parseFloat(rate) || 0;
+        return {
+          ...item,
+          rate,
+          amount: qty * r,
+        };
+      }
+      return item;
+    }));
+  };
+
+  const addLineItem = () => {
+    setLineItems(prev => [...prev, createEmptyLineItem()]);
+  };
+
+  const removeLineItem = (itemId: string) => {
+    if (lineItems.length === 1) return;
+    setLineItems(prev => prev.filter(item => item.id !== itemId));
+  };
+
   const handleCreateInvoice = async () => {
-    if (!formData.customer_id || !formData.total_amount) {
+    const validItems = lineItems.filter(item => item.product_id && parseFloat(item.quantity) > 0);
+    
+    if (!formData.customer_id || validItems.length === 0) {
       toast({
         title: "Validation Error",
-        description: "Please fill in required fields",
+        description: "Please select a customer and add at least one item",
         variant: "destructive",
       });
       return;
     }
 
     setSaving(true);
-    
-    const totalAmount = parseFloat(formData.total_amount);
-    const discountAmount = parseFloat(formData.discount_amount) || 0;
-    const finalAmount = totalAmount - discountAmount;
 
     const { error } = await supabase.from("invoices").insert({
       invoice_number: generateInvoiceNumber(),
       customer_id: formData.customer_id,
       billing_period_start: formData.billing_period_start,
       billing_period_end: formData.billing_period_end,
-      total_amount: totalAmount,
+      total_amount: subtotal,
       discount_amount: discountAmount,
       tax_amount: 0,
       final_amount: finalAmount,
@@ -166,11 +262,11 @@ export default function BillingPage() {
         description: "The invoice has been generated",
       });
       setDialogOpen(false);
+      setLineItems([createEmptyLineItem()]);
       setFormData({
         customer_id: "",
         billing_period_start: format(new Date(new Date().setDate(1)), "yyyy-MM-dd"),
         billing_period_end: format(new Date(), "yyyy-MM-dd"),
-        total_amount: "",
         discount_amount: "0",
       });
       fetchData();
@@ -378,10 +474,10 @@ export default function BillingPage() {
 
       {/* Create Invoice Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Invoice</DialogTitle>
-            <DialogDescription>Generate a new invoice for a customer</DialogDescription>
+            <DialogDescription>Add products with quantity and rate to generate invoice</DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
@@ -421,48 +517,120 @@ export default function BillingPage() {
               </div>
             </div>
 
-            <div className="grid gap-4 grid-cols-2">
-              <div className="space-y-2">
-                <Label>Total Amount (₹) *</Label>
-                <Input
-                  type="number"
-                  value={formData.total_amount}
-                  onChange={(e) => setFormData({ ...formData, total_amount: e.target.value })}
-                  placeholder="0.00"
-                />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold">Line Items</Label>
+                <Button type="button" variant="outline" size="sm" onClick={addLineItem}>
+                  <Plus className="h-4 w-4 mr-1" /> Add Item
+                </Button>
               </div>
-              <div className="space-y-2">
-                <Label>Discount (₹)</Label>
-                <Input
-                  type="number"
-                  value={formData.discount_amount}
-                  onChange={(e) => setFormData({ ...formData, discount_amount: e.target.value })}
-                  placeholder="0.00"
-                />
+              
+              <div className="space-y-3">
+                <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground px-1">
+                  <div className="col-span-4">Product</div>
+                  <div className="col-span-2 text-right">Qty</div>
+                  <div className="col-span-1 text-center">Unit</div>
+                  <div className="col-span-2 text-right">Rate (₹)</div>
+                  <div className="col-span-2 text-right">Amount</div>
+                  <div className="col-span-1"></div>
+                </div>
+                
+                {lineItems.map((item) => (
+                  <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
+                    <div className="col-span-4">
+                      <Select
+                        value={item.product_id}
+                        onValueChange={(v) => handleProductChange(item.id, v)}
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Select product" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {products.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.name} (₹{p.base_price}/{p.unit})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="col-span-2">
+                      <Input
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                        placeholder="0"
+                        className="h-9 text-right"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                    <div className="col-span-1 text-center text-sm text-muted-foreground">
+                      {item.unit || "-"}
+                    </div>
+                    <div className="col-span-2">
+                      <Input
+                        type="number"
+                        value={item.rate}
+                        onChange={(e) => handleRateChange(item.id, e.target.value)}
+                        placeholder="0.00"
+                        className="h-9 text-right"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                    <div className="col-span-2 text-right font-medium">
+                      ₹{item.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </div>
+                    <div className="col-span-1 flex justify-center">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeLineItem(item.id)}
+                        disabled={lineItems.length === 1}
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {formData.total_amount && (
-              <div className="rounded-lg bg-muted p-4">
-                <div className="flex justify-between text-sm">
-                  <span>Total:</span>
-                  <span>₹{parseFloat(formData.total_amount || "0").toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Discount:</span>
-                  <span>-₹{parseFloat(formData.discount_amount || "0").toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between font-semibold mt-2 pt-2 border-t">
-                  <span>Final Amount:</span>
-                  <span>₹{(parseFloat(formData.total_amount || "0") - parseFloat(formData.discount_amount || "0")).toLocaleString()}</span>
-                </div>
+            <div className="space-y-2">
+              <Label>Discount (₹)</Label>
+              <Input
+                type="number"
+                value={formData.discount_amount}
+                onChange={(e) => setFormData({ ...formData, discount_amount: e.target.value })}
+                placeholder="0.00"
+                className="max-w-[200px]"
+              />
+            </div>
+
+            <div className="rounded-lg bg-muted p-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Subtotal:</span>
+                <span>₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
               </div>
-            )}
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-sm text-success">
+                  <span>Discount:</span>
+                  <span>-₹{discountAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-semibold text-lg pt-2 border-t">
+                <span>Grand Total:</span>
+                <span className="text-primary">₹{finalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateInvoice} disabled={saving}>
+            <Button onClick={handleCreateInvoice} disabled={saving || subtotal === 0}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create Invoice
             </Button>
