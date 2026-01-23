@@ -13,84 +13,6 @@ import {
 } from "@/components/ui/dialog";
 import { devError } from "@/lib/utils";
 
-function isCapacitorNative(): boolean {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const Capacitor = (window as any).Capacitor;
-    return Capacitor?.isNativePlatform?.() === true;
-  } catch {
-    return false;
-  }
-}
-
-async function handleCapacitorPDF(doc: jsPDF, fileName: string): Promise<void> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const Capacitor = (window as any).Capacitor;
-    const Filesystem = Capacitor?.Plugins?.Filesystem;
-    const Share = Capacitor?.Plugins?.Share;
-    const Browser = Capacitor?.Plugins?.Browser;
-    
-    // Method 1: Use Filesystem + Share plugins if available
-    if (Filesystem && Share) {
-      const pdfBase64 = doc.output("datauristring").split(",")[1];
-      
-      const result = await Filesystem.writeFile({
-        path: fileName,
-        data: pdfBase64,
-        directory: "CACHE",
-      });
-      
-      await Share.share({
-        title: fileName,
-        url: result.uri,
-        dialogTitle: "Share Invoice PDF",
-      });
-      return;
-    }
-    
-    // Method 2: Use Browser plugin to open in external browser
-    if (Browser) {
-      const pdfBlob = doc.output("blob");
-      const blobUrl = URL.createObjectURL(pdfBlob);
-      await Browser.open({ url: blobUrl });
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
-      return;
-    }
-    
-    // Method 3: Open data URI in external browser using _system target
-    const dataUri = doc.output("datauristring");
-    const externalWindow = window.open(dataUri, "_system");
-    if (externalWindow) {
-      return;
-    }
-    
-    // Method 4: Try opening blob URL in external browser
-    const pdfBlob = doc.output("blob");
-    const blobUrl = URL.createObjectURL(pdfBlob);
-    const systemWindow = window.open(blobUrl, "_system");
-    if (systemWindow) {
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
-      return;
-    }
-    
-    // Method 5: Use anchor tag with download attribute
-    const link = document.createElement("a");
-    link.href = blobUrl;
-    link.download = fileName;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
-  } catch (error) {
-    devError("Capacitor PDF error:", error);
-    // Last resort fallback
-    doc.save(fileName);
-  }
-}
-
 function formatIndianCurrency(amount: number): string {
   const absAmount = Math.abs(amount);
   const formatted = absAmount.toLocaleString('en-IN', {
@@ -886,20 +808,12 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
       const fileName = `Invoice_${invoice.invoice_number}_${customer.name.replace(/\s+/g, "_")}.pdf`;
       
       if (action === "download") {
-        if (isCapacitorNative()) {
-          await handleCapacitorPDF(doc, fileName);
-        } else {
-          doc.save(fileName);
-        }
+        doc.save(fileName);
         onGenerated?.();
       } else {
-        if (isCapacitorNative()) {
-          await handleCapacitorPDF(doc, fileName);
-        } else {
-          const dataUrl = doc.output("datauristring");
-          setPdfDataUrl(dataUrl);
-          setPreviewOpen(true);
-        }
+        const dataUrl = doc.output("datauristring");
+        setPdfDataUrl(dataUrl);
+        setPreviewOpen(true);
       }
     } catch (error) {
       devError("Error generating PDF:", error);
