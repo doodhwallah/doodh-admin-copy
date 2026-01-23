@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 import { format, subWeeks, subMonths, startOfDay, endOfDay } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,13 +19,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, FileSpreadsheet, FileText, Loader2, Database, AlertTriangle } from "lucide-react";
+import { Download, FileSpreadsheet, FileText, Loader2, Database, AlertTriangle, File } from "lucide-react";
 import { devError } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type TimeRange = "daily" | "weekly" | "monthly" | "all";
-type ExportFormat = "pdf" | "csv";
+type ExportFormat = "pdf" | "csv" | "excel";
 
 interface TableData {
   name: string;
@@ -329,6 +330,131 @@ function generateCSV(result: ExportResult, timeRange: TimeRange): void {
     link.click();
     URL.revokeObjectURL(link.href);
   }
+}
+
+function generateExcel(result: ExportResult, timeRange: TimeRange): void {
+  const timestamp = format(new Date(), "yyyy-MM-dd_HH-mm");
+  const rangeLabel = timeRange === "all" ? "Complete" : timeRange.charAt(0).toUpperCase() + timeRange.slice(1);
+
+  const workbook = XLSX.utils.book_new();
+
+  const summaryData = [
+    ["Doodh Wallah - Data Backup"],
+    [`Export Date: ${format(new Date(), "dd MMM yyyy HH:mm")}`],
+    [`Time Range: ${rangeLabel}`],
+    [],
+    ["Table Name", "Record Count", "Status"],
+  ];
+
+  let totalRecords = 0;
+  for (const tableData of result.tables) {
+    const count = tableData.data.length;
+    totalRecords += count;
+    const status = tableData.error ? `Error: ${tableData.error}` : (count === 0 ? "No data" : "OK");
+    summaryData.push([tableData.name, String(count), status]);
+  }
+
+  summaryData.push([]);
+  summaryData.push(["Total Records", String(totalRecords), ""]);
+
+  const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+  summarySheet["!cols"] = [{ wch: 25 }, { wch: 15 }, { wch: 30 }];
+  XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
+
+  for (const config of tableConfigs) {
+    const tableData = result.tables.find(t => t.name === config.name);
+    if (!tableData || tableData.data.length === 0) continue;
+
+    const sheetName = config.name.substring(0, 31).replace(/[\\/*?:\[\]]/g, "_");
+
+    if (config.name === "Milk Production") {
+      const productionByDate: Record<string, Record<string, { morning: number; evening: number; cattleName: string; tagNumber: string }>> = {};
+
+      for (const row of tableData.data) {
+        const rawDate = String(row.production_date || "").split("T")[0];
+        const date = rawDate || "Unknown";
+        const cattleUniqueId = String(row.cattle_id || "unknown");
+        const tagNumber = row.cattle?.tag_number || `ID:${cattleUniqueId}`;
+        const cattleName = row.cattle?.name ? `${tagNumber} (${row.cattle.name})` : tagNumber;
+        const session = row.session;
+        const qty = Number(row.quantity_liters) || 0;
+
+        if (!productionByDate[date]) productionByDate[date] = {};
+        if (!productionByDate[date][cattleUniqueId]) {
+          productionByDate[date][cattleUniqueId] = { morning: 0, evening: 0, cattleName, tagNumber };
+        }
+
+        if (session === "morning") {
+          productionByDate[date][cattleUniqueId].morning += qty;
+        } else {
+          productionByDate[date][cattleUniqueId].evening += qty;
+        }
+      }
+
+      const sortedDates = Object.keys(productionByDate).sort((a, b) => b.localeCompare(a));
+      const sheetData: (string | number)[][] = [["Date", "Day", "Cattle", "Morning (L)", "Evening (L)", "Day Total (L)"]];
+
+      for (const date of sortedDates) {
+        const dateData = productionByDate[date];
+        let formattedDate = date;
+        let dayName = "";
+        try {
+          const dateObj = new Date(date + "T00:00:00");
+          formattedDate = format(dateObj, "dd/MM/yyyy");
+          dayName = format(dateObj, "EEEE");
+        } catch {
+          formattedDate = date;
+        }
+
+        const cattleIds = Object.keys(dateData).sort((a, b) => 
+          (dateData[a].tagNumber || "").localeCompare(dateData[b].tagNumber || "")
+        );
+
+        let dayMorningTotal = 0;
+        let dayEveningTotal = 0;
+
+        for (const cattleId of cattleIds) {
+          const data = dateData[cattleId];
+          const total = data.morning + data.evening;
+          dayMorningTotal += data.morning;
+          dayEveningTotal += data.evening;
+          sheetData.push([formattedDate, dayName, data.cattleName, data.morning, data.evening, total]);
+        }
+
+        sheetData.push([formattedDate, dayName, "TOTAL", dayMorningTotal, dayEveningTotal, dayMorningTotal + dayEveningTotal]);
+        sheetData.push(["", "", "", "", "", ""]);
+      }
+
+      const ws = XLSX.utils.aoa_to_sheet(sheetData);
+      ws["!cols"] = [{ wch: 12 }, { wch: 12 }, { wch: 25 }, { wch: 12 }, { wch: 12 }, { wch: 14 }];
+      XLSX.utils.book_append_sheet(workbook, ws, sheetName);
+    } else {
+      const sheetData: any[][] = [config.columns.map(c => c.label)];
+
+      tableData.data.forEach((row: any) => {
+        const rowData = config.columns.map((col) => {
+          const value = getNestedValue(row, col.key);
+          if (value === null || value === undefined) return "";
+          if (typeof value === "boolean") return value ? "Yes" : "No";
+          if (col.key.includes("date") || col.key.includes("Date")) {
+            try {
+              return format(new Date(value), "dd/MM/yyyy");
+            } catch {
+              return String(value);
+            }
+          }
+          return value;
+        });
+        sheetData.push(rowData);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(sheetData);
+      ws["!cols"] = config.columns.map(() => ({ wch: 15 }));
+      XLSX.utils.book_append_sheet(workbook, ws, sheetName);
+    }
+  }
+
+  XLSX.writeFile(workbook, `DoodhWallah_Backup_${rangeLabel}_${timestamp}.xlsx`);
 }
 
 async function generatePDF(result: ExportResult, timeRange: TimeRange): Promise<void> {
@@ -680,7 +806,7 @@ export function DataExportDialog({ open: externalOpen, onOpenChange }: DataExpor
   const open = externalOpen ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
   const [timeRange, setTimeRange] = useState<TimeRange>("monthly");
-  const [exportFormat, setExportFormat] = useState<ExportFormat>("pdf");
+  const [exportFormat, setExportFormat] = useState<ExportFormat>("excel");
   const [exporting, setExporting] = useState(false);
   const [exportResult, setExportResult] = useState<ExportResult | null>(null);
   const { toast } = useToast();
@@ -695,6 +821,8 @@ export function DataExportDialog({ open: externalOpen, onOpenChange }: DataExpor
 
       if (exportFormat === "csv") {
         generateCSV(result, timeRange);
+      } else if (exportFormat === "excel") {
+        generateExcel(result, timeRange);
       } else {
         await generatePDF(result, timeRange);
       }
@@ -706,11 +834,14 @@ export function DataExportDialog({ open: externalOpen, onOpenChange }: DataExpor
           variant: "destructive",
         });
       } else {
+        const formatMessages: Record<ExportFormat, string> = {
+          csv: "All CSV files have been downloaded.",
+          excel: "Excel workbook has been downloaded.",
+          pdf: "Your backup report has been downloaded.",
+        };
         toast({
           title: "Export Complete",
-          description: exportFormat === "csv" 
-            ? "All CSV files have been downloaded." 
-            : "Your backup report has been downloaded.",
+          description: formatMessages[exportFormat],
         });
         setOpen(false);
       }
@@ -769,6 +900,12 @@ export function DataExportDialog({ open: externalOpen, onOpenChange }: DataExpor
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="excel">
+                  <span className="flex items-center gap-2">
+                    <FileSpreadsheet className="h-4 w-4" />
+                    Excel Workbook (.xlsx)
+                  </span>
+                </SelectItem>
                 <SelectItem value="pdf">
                   <span className="flex items-center gap-2">
                     <FileText className="h-4 w-4" />
@@ -777,8 +914,8 @@ export function DataExportDialog({ open: externalOpen, onOpenChange }: DataExpor
                 </SelectItem>
                 <SelectItem value="csv">
                   <span className="flex items-center gap-2">
-                    <FileSpreadsheet className="h-4 w-4" />
-                    CSV Files (for Excel/Sheets)
+                    <File className="h-4 w-4" />
+                    CSV Files (separate files per table)
                   </span>
                 </SelectItem>
               </SelectContent>

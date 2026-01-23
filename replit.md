@@ -64,6 +64,14 @@ supabase/      - Supabase configuration
 - **Error Boundary**: App wrapped with ErrorBoundary component for crash prevention
 - **Error Sanitization**: Sensitive error details filtered via `sanitizeError` utility
 
+## Data Export / Backup (Jan 2026)
+- **Excel Export**: Multi-sheet workbook with Summary + one sheet per table
+- **PDF Export**: Landscape A4 report with summary and all tables
+- **CSV Export**: Individual CSV file per table
+- All formats support time range filtering (Today, Last 7 days, Last 30 days, All data)
+- Special pivot table format for Milk Production data (Date/Cattle/Morning/Evening/Total)
+- Master data (Cattle, Customers, etc.) always exported in full regardless of date range
+
 ## Development
 - **Port**: 5000
 - **Command**: `npm run dev`
