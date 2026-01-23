@@ -224,10 +224,12 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
             td { padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 11px; }
             tr:nth-child(even) { background: #f8fafc; }
             .text-right { text-align: right; }
-            .summary { width: 250px; margin-left: auto; background: #f8fafc; padding: 15px; border-radius: 5px; }
-            .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; }
-            .summary-total { background: #4f46e5; color: white; padding: 10px; border-radius: 5px; margin-top: 10px; }
-            .summary-total .summary-row { margin-bottom: 0; font-weight: bold; }
+            .summary { width: 280px; margin-left: auto; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0; }
+            .summary-table { width: 100%; border: none; margin: 0; }
+            .summary-table td { padding: 8px 0; border: none; font-size: 12px; background: transparent; }
+            .summary-table tr { background: transparent !important; }
+            .summary-table .total-row { border-top: 2px solid #4f46e5; }
+            .summary-table .total-row td { padding-top: 12px; font-size: 14px; color: #4f46e5; }
             .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #10b981; }
             .footer h4 { color: #4f46e5; margin-bottom: 5px; }
             .footer p { font-size: 10px; color: #64748b; }
@@ -275,21 +277,23 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
           <table>
             <thead>
               <tr>
-                <th>#</th>
-                <th>Product</th>
-                <th class="text-right">Total Qty</th>
-                <th class="text-right">Rate</th>
-                <th class="text-right">Amount</th>
+                <th style="width:30px;text-align:center">#</th>
+                <th style="text-align:left">Description</th>
+                <th style="width:60px;text-align:right">Qty</th>
+                <th style="width:60px;text-align:center">Unit</th>
+                <th style="width:80px;text-align:right">Rate</th>
+                <th style="width:90px;text-align:right">Amount</th>
               </tr>
             </thead>
             <tbody>
               ${Object.values(groupedItems).map((item, index) => `
                 <tr>
-                  <td>${index + 1}</td>
+                  <td style="text-align:center">${index + 1}</td>
                   <td>${item.product_name}</td>
-                  <td class="text-right">${item.quantity.toFixed(2)} ${item.unit}</td>
-                  <td class="text-right">${formatIndianCurrency(item.unit_price)}/${item.unit}</td>
-                  <td class="text-right">${formatIndianCurrency(item.total_amount)}</td>
+                  <td style="text-align:right">${item.quantity.toFixed(2)}</td>
+                  <td style="text-align:center">${item.unit}</td>
+                  <td style="text-align:right">${formatIndianCurrency(item.unit_price)}</td>
+                  <td style="text-align:right;font-weight:500">${formatIndianCurrency(item.total_amount)}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -298,18 +302,46 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
           <p class="note">* Based on ${totalDeliveries} deliveries during billing period</p>
 
           <div class="summary">
-            <div class="summary-row"><span>Subtotal:</span><span>${formatIndianCurrency(Number(invoice.total_amount))}</span></div>
-            <div class="summary-row"><span>Discount:</span><span style="color:#10b981">${Number(invoice.discount_amount) > 0 ? `-${formatIndianCurrency(Math.abs(Number(invoice.discount_amount)))}` : formatIndianCurrency(0)}</span></div>
-            <div class="summary-row"><span>Tax:</span><span>${formatIndianCurrency(Number(invoice.tax_amount))}</span></div>
-            <div class="summary-total">
-              <div class="summary-row"><span>Grand Total:</span><span>${formatIndianCurrency(Number(invoice.final_amount))}</span></div>
-            </div>
+            <table class="summary-table">
+              <tr>
+                <td>Subtotal</td>
+                <td style="text-align:right">${formatIndianCurrency(Number(invoice.total_amount))}</td>
+              </tr>
+              ${Number(invoice.discount_amount) > 0 ? `
+              <tr>
+                <td>Discount</td>
+                <td style="text-align:right;color:#10b981">-${formatIndianCurrency(Math.abs(Number(invoice.discount_amount)))}</td>
+              </tr>
+              ` : ''}
+              ${Number(invoice.tax_amount) > 0 ? `
+              <tr>
+                <td>Tax</td>
+                <td style="text-align:right">${formatIndianCurrency(Number(invoice.tax_amount))}</td>
+              </tr>
+              ` : ''}
+              <tr class="total-row">
+                <td><strong>Grand Total</strong></td>
+                <td style="text-align:right"><strong>${formatIndianCurrency(Number(invoice.final_amount))}</strong></td>
+              </tr>
+            </table>
             ${Number(invoice.paid_amount) > 0 ? `
-              <div style="margin-top:10px; padding:10px; background:#d1fae5; border-radius:5px;">
-                <div class="summary-row" style="color:#10b981"><span>Amount Paid:</span><span>${formatIndianCurrency(Number(invoice.paid_amount))}</span></div>
-                ${Number(invoice.final_amount) - Number(invoice.paid_amount) > 0 ? `
-                  <div class="summary-row" style="color:#ef4444"><span>Balance Due:</span><span>${formatIndianCurrency(Number(invoice.final_amount) - Number(invoice.paid_amount))}</span></div>
-                ` : ''}
+              <div style="margin-top:12px; padding:12px; background:#d1fae5; border-radius:6px; border:1px solid #10b981;">
+                <table class="summary-table" style="margin:0">
+                  <tr>
+                    <td style="color:#047857">Amount Paid</td>
+                    <td style="text-align:right;color:#047857">${formatIndianCurrency(Number(invoice.paid_amount))}</td>
+                  </tr>
+                  ${Number(invoice.final_amount) - Number(invoice.paid_amount) > 0 ? `
+                  <tr>
+                    <td style="color:#dc2626;font-weight:600">Balance Due</td>
+                    <td style="text-align:right;color:#dc2626;font-weight:600">${formatIndianCurrency(Number(invoice.final_amount) - Number(invoice.paid_amount))}</td>
+                  </tr>
+                  ` : `
+                  <tr>
+                    <td colspan="2" style="text-align:center;color:#047857;font-weight:600">PAID IN FULL</td>
+                  </tr>
+                  `}
+                </table>
               </div>
             ` : ''}
           </div>
@@ -653,14 +685,15 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
         const tableData = Object.values(groupedItems).map((item, index) => [
           index + 1,
           item.product_name,
-          `${item.quantity.toFixed(2)} ${item.unit}`,
-          `${formatIndianCurrency(item.unit_price)}/${item.unit}`,
+          item.quantity.toFixed(2),
+          item.unit,
+          formatIndianCurrency(item.unit_price),
           formatIndianCurrency(item.total_amount),
         ]);
 
         autoTable(doc, {
           startY: yPos,
-          head: [["#", "Product", "Total Qty", "Rate", "Amount"]],
+          head: [["#", "Description", "Qty", "Unit", "Rate", "Amount"]],
           body: tableData,
           margin: { left: margin, right: margin },
           headStyles: {
@@ -668,22 +701,24 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
             textColor: [255, 255, 255],
             fontStyle: "bold",
             fontSize: 10,
-            cellPadding: 4,
+            cellPadding: 5,
+            halign: "center",
           },
           bodyStyles: {
             textColor: darkColor,
             fontSize: 9,
-            cellPadding: 4,
+            cellPadding: 5,
           },
           alternateRowStyles: {
             fillColor: [248, 250, 252],
           },
           columnStyles: {
             0: { cellWidth: 12, halign: "center" },
-            1: { cellWidth: "auto" },
-            2: { cellWidth: 30, halign: "right" },
-            3: { cellWidth: 35, halign: "right" },
-            4: { cellWidth: 35, halign: "right" },
+            1: { cellWidth: "auto", halign: "left" },
+            2: { cellWidth: 22, halign: "right" },
+            3: { cellWidth: 22, halign: "center" },
+            4: { cellWidth: 30, halign: "right" },
+            5: { cellWidth: 35, halign: "right" },
           },
         });
 
