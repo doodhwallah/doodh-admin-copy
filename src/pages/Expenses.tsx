@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/common/PageHeader";
 import { DataTable } from "@/components/common/DataTable";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import { DataFilters, TimeRange, SortOption, getDateRangeFromTimeRange } from "@/components/common/DataFilters";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,6 +60,12 @@ const categoryLabels: Record<string, string> = {
   misc: "Miscellaneous",
 };
 
+const expensesSortOptions: SortOption[] = [
+  { value: "expense_date", label: "Date" },
+  { value: "amount", label: "Amount" },
+  { value: "category", label: "Category" },
+];
+
 export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +74,9 @@ export default function ExpensesPage() {
   const [saving, setSaving] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [timeRange, setTimeRange] = useState<TimeRange>("3m");
+  const [sortBy, setSortBy] = useState("expense_date");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [formData, setFormData] = useState({
     category: "feed",
     title: "",
@@ -76,16 +86,24 @@ export default function ExpensesPage() {
   });
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchExpenses();
-  }, []);
-
-  const fetchExpenses = async () => {
+  const fetchExpenses = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const dateRange = getDateRangeFromTimeRange(timeRange);
+    
+    let query = supabase
       .from("expenses")
-      .select("*")
-      .order("expense_date", { ascending: false });
+      .select("*");
+    
+    if (dateRange.start) {
+      query = query.gte("expense_date", format(dateRange.start, "yyyy-MM-dd"));
+    }
+    if (dateRange.end) {
+      query = query.lte("expense_date", format(dateRange.end, "yyyy-MM-dd"));
+    }
+    
+    query = query.order(sortBy, { ascending: sortDirection === "asc" });
+    
+    const { data, error } = await query;
 
     if (error) {
       toast({ title: "Error fetching expenses", description: error.message, variant: "destructive" });
@@ -93,7 +111,11 @@ export default function ExpensesPage() {
       setExpenses(data || []);
     }
     setLoading(false);
-  };
+  }, [timeRange, sortBy, sortDirection, toast]);
+
+  useEffect(() => {
+    fetchExpenses();
+  }, [fetchExpenses]);
 
   const handleSave = async () => {
     if (!formData.title || !formData.amount) {
@@ -307,7 +329,18 @@ export default function ExpensesPage() {
         </CardContent>
       </Card>
 
-      {/* Filter */}
+      {/* DataFilters */}
+      <DataFilters
+        timeRange={timeRange}
+        onTimeRangeChange={setTimeRange}
+        sortBy={sortBy}
+        sortOptions={expensesSortOptions}
+        onSortChange={setSortBy}
+        sortDirection={sortDirection}
+        onSortDirectionChange={setSortDirection}
+      />
+
+      {/* Category Filter */}
       <Tabs value={categoryFilter} onValueChange={setCategoryFilter}>
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="all">All</TabsTrigger>

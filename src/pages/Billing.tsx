@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/common/PageHeader";
 import { DataTable } from "@/components/common/DataTable";
 import { StatusBadge } from "@/components/common/StatusBadge";
+import { DataFilters, TimeRange, SortOption, getDateRangeFromTimeRange } from "@/components/common/DataFilters";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +28,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Receipt, IndianRupee, Loader2, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { InvoicePDFGenerator } from "@/components/billing/InvoicePDFGenerator";
+
+const billingSortOptions: SortOption[] = [
+  { value: "created_at", label: "Date Created" },
+  { value: "final_amount", label: "Amount" },
+  { value: "due_date", label: "Due Date" },
+  { value: "invoice_number", label: "Invoice #" },
+];
 
 interface Customer {
   id: string;
@@ -93,6 +101,9 @@ export default function BillingPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceWithCustomer | null>(null);
   const [lineItems, setLineItems] = useState<LineItem[]>([createEmptyLineItem()]);
+  const [timeRange, setTimeRange] = useState<TimeRange>("3m");
+  const [sortBy, setSortBy] = useState("created_at");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [formData, setFormData] = useState({
     customer_id: "",
     billing_period_start: format(new Date(new Date().setDate(1)), "yyyy-MM-dd"),
@@ -102,27 +113,35 @@ export default function BillingPage() {
   const [paymentAmount, setPaymentAmount] = useState("");
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     
     try {
+      const dateRange = getDateRangeFromTimeRange(timeRange);
+      
+      let invoiceQuery = supabase
+        .from("invoices")
+        .select(`
+          *,
+          customer:customer_id (id, name)
+        `);
+      
+      if (dateRange.start) {
+        invoiceQuery = invoiceQuery.gte("created_at", format(dateRange.start, "yyyy-MM-dd"));
+      }
+      if (dateRange.end) {
+        invoiceQuery = invoiceQuery.lte("created_at", format(dateRange.end, "yyyy-MM-dd'T'23:59:59"));
+      }
+      
+      invoiceQuery = invoiceQuery.order(sortBy, { ascending: sortDirection === "asc" });
+      
       const [customerRes, invoiceRes, productRes] = await Promise.all([
         supabase
           .from("customers")
           .select("id, name")
           .eq("is_active", true)
           .order("name"),
-        supabase
-          .from("invoices")
-          .select(`
-            *,
-            customer:customer_id (id, name)
-          `)
-          .order("created_at", { ascending: false }),
+        invoiceQuery,
         supabase
           .from("products")
           .select("id, name, unit, base_price, is_active")
@@ -147,7 +166,11 @@ export default function BillingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [timeRange, sortBy, sortDirection, toast]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const generateInvoiceNumber = () => {
     const date = new Date();
@@ -476,16 +499,27 @@ export default function BillingPage() {
         </Card>
       </div>
 
-      {/* Filter Tabs */}
-      <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-        <TabsList>
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="partial">Partial</TabsTrigger>
-          <TabsTrigger value="paid">Paid</TabsTrigger>
-          <TabsTrigger value="overdue">Overdue</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      {/* Filters */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+          <TabsList>
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="pending">Pending</TabsTrigger>
+            <TabsTrigger value="partial">Partial</TabsTrigger>
+            <TabsTrigger value="paid">Paid</TabsTrigger>
+            <TabsTrigger value="overdue">Overdue</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <DataFilters
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          sortBy={sortBy}
+          sortOptions={billingSortOptions}
+          onSortChange={setSortBy}
+          sortDirection={sortDirection}
+          onSortDirectionChange={setSortDirection}
+        />
+      </div>
 
       <DataTable
         data={filteredInvoices}

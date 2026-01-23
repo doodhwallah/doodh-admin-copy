@@ -3,6 +3,7 @@ import { useHealthData, HealthRecordWithCattle, HealthFormData } from "@/hooks/u
 import { HealthPageSkeleton } from "@/components/common/PageSkeletons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { DataTable } from "@/components/common/DataTable";
+import { DataFilters, TimeRange, SortOption } from "@/components/common/DataFilters";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,8 +54,17 @@ const emptyFormData: HealthFormData = {
   next_due_date: "",
 };
 
+const healthSortOptions: SortOption[] = [
+  { value: "record_date", label: "Date" },
+  { value: "record_type", label: "Type" },
+  { value: "cost", label: "Cost" },
+];
+
 export default function HealthPage() {
-  const { records, cattle, isLoading, createRecord, isCreating } = useHealthData();
+  const [timeRange, setTimeRange] = useState<TimeRange>("3m");
+  const [sortBy, setSortBy] = useState("record_date");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const { records, cattle, isLoading, createRecord, isCreating } = useHealthData({ timeRange, sortBy, sortDirection });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [typeFilter, setTypeFilter] = useState("all");
   const [formData, setFormData] = useState<HealthFormData>(emptyFormData);
@@ -147,9 +157,20 @@ export default function HealthPage() {
         </Card>
       )}
 
-      <Tabs value={typeFilter} onValueChange={setTypeFilter}>
-        <TabsList><TabsTrigger value="all">All</TabsTrigger><TabsTrigger value="vaccination">Vaccinations</TabsTrigger><TabsTrigger value="treatment">Treatments</TabsTrigger><TabsTrigger value="checkup">Checkups</TabsTrigger><TabsTrigger value="disease">Diseases</TabsTrigger></TabsList>
-      </Tabs>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <Tabs value={typeFilter} onValueChange={setTypeFilter}>
+          <TabsList><TabsTrigger value="all">All</TabsTrigger><TabsTrigger value="vaccination">Vaccinations</TabsTrigger><TabsTrigger value="treatment">Treatments</TabsTrigger><TabsTrigger value="checkup">Checkups</TabsTrigger><TabsTrigger value="disease">Diseases</TabsTrigger></TabsList>
+        </Tabs>
+        <DataFilters
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          sortBy={sortBy}
+          sortOptions={healthSortOptions}
+          onSortChange={setSortBy}
+          sortDirection={sortDirection}
+          onSortDirectionChange={setSortDirection}
+        />
+      </div>
 
       <DataTable data={filteredRecords} columns={columns} loading={isLoading} searchPlaceholder="Search by cattle, title..." emptyMessage="No health records found" />
 

@@ -64,6 +64,20 @@ supabase/      - Supabase configuration
 - **Error Boundary**: App wrapped with ErrorBoundary component for crash prevention
 - **Error Sanitization**: Sensitive error details filtered via `sanitizeError` utility
 
+## Data Filtering & Sorting (Jan 2026)
+- **DataFilters Component**: Reusable component (`src/components/common/DataFilters.tsx`) with:
+  - Time range filter: Last Month, 2 Months, 3 Months, 6 Months, Year, All Time
+  - Sort dropdown with customizable options per page
+  - Sort direction toggle (ascending/descending)
+- **Database-Level Filtering**: Queries apply .gte()/.lte() on date fields, reducing data fetched
+- **Pages with filters**:
+  - Billing: Filter by created_at, sort by date/amount/due_date/invoice#
+  - Deliveries: Daily view (single date) or Range view with filters
+  - Expenses: Filter by expense_date, sort by date/amount/category
+  - Production: Filter by production_date, sort by date/quantity
+  - Health: Filter by record_date, sort by date/type/cost
+  - Audit Logs: Filter by created_at, sort by time/action/entity
+
 ## Data Export / Backup (Jan 2026)
 - **Excel Export**: Multi-sheet workbook with Summary + one sheet per table
 - **PDF Export**: Landscape A4 report with summary and all tables

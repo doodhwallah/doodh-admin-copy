@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/common/PageHeader";
 import { DataTable } from "@/components/common/DataTable";
+import { DataFilters, TimeRange, SortOption, getDateRangeFromTimeRange } from "@/components/common/DataFilters";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +49,12 @@ const entityLabels: Record<string, string> = {
   health: "Health Record",
 };
 
+const auditLogSortOptions: SortOption[] = [
+  { value: "created_at", label: "Time" },
+  { value: "action", label: "Action" },
+  { value: "entity_type", label: "Entity" },
+];
+
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -58,17 +64,29 @@ export default function AuditLogsPage() {
   // Filters
   const [entityFilter, setEntityFilter] = useState("");
   const [actionFilter, setActionFilter] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [timeRange, setTimeRange] = useState<TimeRange>("1m");
+  const [sortBy, setSortBy] = useState("created_at");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
 
-  const fetchData = async () => {
     try {
+      const dateRange = getDateRangeFromTimeRange(timeRange);
+
+      let logsQuery = supabase.from("activity_logs").select("*");
+
+      if (dateRange.start) {
+        logsQuery = logsQuery.gte("created_at", format(dateRange.start, "yyyy-MM-dd"));
+      }
+      if (dateRange.end) {
+        logsQuery = logsQuery.lte("created_at", format(dateRange.end, "yyyy-MM-dd'T'23:59:59"));
+      }
+
+      logsQuery = logsQuery.order(sortBy, { ascending: sortDirection === "asc" });
+
       const [logsRes, profilesRes] = await Promise.all([
-        supabase.from("activity_logs").select("*").order("created_at", { ascending: false }).limit(500),
+        logsQuery,
         supabase.from("profiles").select("id, full_name"),
       ]);
 
@@ -79,7 +97,11 @@ export default function AuditLogsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [timeRange, sortBy, sortDirection]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const getUserName = (userId: string | null) => {
     if (!userId) return "System";
@@ -89,8 +111,6 @@ export default function AuditLogsPage() {
   const filteredLogs = logs.filter(log => {
     if (entityFilter && log.entity_type !== entityFilter) return false;
     if (actionFilter && log.action !== actionFilter) return false;
-    if (dateFrom && new Date(log.created_at) < new Date(dateFrom)) return false;
-    if (dateTo && new Date(log.created_at) > new Date(dateTo + "T23:59:59")) return false;
     return true;
   });
 
@@ -251,8 +271,19 @@ export default function AuditLogsPage() {
             Filters
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <CardContent className="space-y-4">
+          <div>
+            <DataFilters
+              timeRange={timeRange}
+              onTimeRangeChange={setTimeRange}
+              sortBy={sortBy}
+              sortOptions={auditLogSortOptions}
+              onSortChange={setSortBy}
+              sortDirection={sortDirection}
+              onSortDirectionChange={setSortDirection}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">Entity Type</label>
               <Select value={entityFilter || "all"} onValueChange={(v) => setEntityFilter(v === "all" ? "" : v)}>
@@ -277,24 +308,14 @@ export default function AuditLogsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">From Date</label>
-              <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">To Date</label>
-              <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
-            </div>
           </div>
-          {(entityFilter || actionFilter || dateFrom || dateTo) && (
+          {(entityFilter || actionFilter) && (
             <Button 
               variant="ghost" 
-              className="mt-4" 
+              className="mt-2" 
               onClick={() => {
                 setEntityFilter("");
                 setActionFilter("");
-                setDateFrom("");
-                setDateTo("");
               }}
             >
               Clear Filters

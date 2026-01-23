@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/common/PageHeader";
 import { DataTable } from "@/components/common/DataTable";
+import { DataFilters, TimeRange, SortOption, getDateRangeFromTimeRange } from "@/components/common/DataFilters";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,6 +44,11 @@ interface ProductionWithCattle extends MilkProduction {
   cattle: Cattle;
 }
 
+const productionSortOptions: SortOption[] = [
+  { value: "production_date", label: "Date" },
+  { value: "quantity_liters", label: "Quantity" },
+];
+
 export default function ProductionPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [productions, setProductions] = useState<ProductionWithCattle[]>([]);
@@ -53,6 +59,9 @@ export default function ProductionPage() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [session, setSession] = useState<"morning" | "evening">("morning");
   const [entries, setEntries] = useState<Record<string, { quantity: string; fat: string; snf: string; notes: string }>>({});
+  const [timeRange, setTimeRange] = useState<TimeRange>("1m");
+  const [sortBy, setSortBy] = useState("production_date");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const { toast } = useToast();
 
   // History dialog state
@@ -62,19 +71,29 @@ export default function ProductionPage() {
   const [selectedCattleName, setSelectedCattleName] = useState<string>("");
   const [sessionFilter, setSessionFilter] = useState<"morning" | "evening" | "total">("total");
 
-  useEffect(() => {
-    fetchData();
-    if (searchParams.get("action") === "add") {
-      setDialogOpen(true);
-      setSearchParams({});
-    }
-  }, [searchParams]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     
     try {
+      const dateRange = getDateRangeFromTimeRange(timeRange);
+      
       // Fetch cattle and productions in parallel for faster loading
+      let productionQuery = supabase
+        .from("milk_production")
+        .select(`
+          *,
+          cattle:cattle_id (id, tag_number, name)
+        `);
+      
+      if (dateRange.start) {
+        productionQuery = productionQuery.gte("production_date", format(dateRange.start, "yyyy-MM-dd"));
+      }
+      if (dateRange.end) {
+        productionQuery = productionQuery.lte("production_date", format(dateRange.end, "yyyy-MM-dd"));
+      }
+      
+      productionQuery = productionQuery.order(sortBy, { ascending: sortDirection === "asc" });
+      
       const [cattleRes, productionRes] = await Promise.all([
         supabase
           .from("cattle")
@@ -82,15 +101,7 @@ export default function ProductionPage() {
           .eq("status", "active")
           .in("lactation_status", ["lactating"])
           .order("tag_number"),
-        supabase
-          .from("milk_production")
-          .select(`
-            *,
-            cattle:cattle_id (id, tag_number, name)
-          `)
-          .order("production_date", { ascending: false })
-          .order("session", { ascending: false })
-          .limit(100)
+        productionQuery
       ]);
 
       setCattle(cattleRes.data || []);
@@ -109,7 +120,15 @@ export default function ProductionPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [timeRange, sortBy, sortDirection, toast]);
+
+  useEffect(() => {
+    fetchData();
+    if (searchParams.get("action") === "add") {
+      setDialogOpen(true);
+      setSearchParams({});
+    }
+  }, [fetchData, searchParams, setSearchParams]);
 
   const handleOpenDialog = async () => {
     // Reset entries
@@ -280,6 +299,16 @@ export default function ProductionPage() {
           label: "Record Production",
           onClick: handleOpenDialog,
         }}
+      />
+
+      <DataFilters
+        timeRange={timeRange}
+        onTimeRangeChange={setTimeRange}
+        sortBy={sortBy}
+        sortOptions={productionSortOptions}
+        onSortChange={setSortBy}
+        sortDirection={sortDirection}
+        onSortDirectionChange={setSortDirection}
       />
 
       {/* Stats Cards - Now Clickable */}

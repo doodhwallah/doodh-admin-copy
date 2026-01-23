@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useExpenseAutomation } from "@/hooks/useExpenseAutomation";
+import { TimeRange, getDateRangeFromTimeRange } from "@/components/common/DataFilters";
 import { format } from "date-fns";
 
 interface Cattle {
@@ -40,12 +41,37 @@ interface HealthData {
   cattle: Cattle[];
 }
 
-async function fetchHealthData(): Promise<HealthData> {
+interface HealthDataOptions {
+  timeRange?: TimeRange;
+  sortBy?: string;
+  sortDirection?: "asc" | "desc";
+}
+
+async function fetchHealthData(options?: HealthDataOptions): Promise<HealthData> {
+  const timeRange = options?.timeRange || "all";
+  const sortBy = options?.sortBy || "record_date";
+  const sortDirection = options?.sortDirection || "desc";
+
+  let recordsQuery = supabase
+    .from("cattle_health")
+    .select(`*, cattle:cattle_id (id, tag_number, name)`);
+
+  // Apply date range filter if timeRange is not "all"
+  if (timeRange !== "all") {
+    const dateRange = getDateRangeFromTimeRange(timeRange);
+    if (dateRange.start) {
+      recordsQuery = recordsQuery.gte("record_date", format(dateRange.start, "yyyy-MM-dd"));
+    }
+    if (dateRange.end) {
+      recordsQuery = recordsQuery.lte("record_date", format(dateRange.end, "yyyy-MM-dd'T'23:59:59"));
+    }
+  }
+
+  // Apply sorting
+  recordsQuery = recordsQuery.order(sortBy, { ascending: sortDirection === "asc" });
+
   const [recordsRes, cattleRes] = await Promise.all([
-    supabase
-      .from("cattle_health")
-      .select(`*, cattle:cattle_id (id, tag_number, name)`)
-      .order("record_date", { ascending: false }),
+    recordsQuery,
     supabase
       .from("cattle")
       .select("id, tag_number, name")
@@ -62,14 +88,14 @@ async function fetchHealthData(): Promise<HealthData> {
   };
 }
 
-export function useHealthData() {
+export function useHealthData(options?: HealthDataOptions) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { logHealthExpense } = useExpenseAutomation();
 
   const healthQuery = useQuery({
-    queryKey: ["health-records"],
-    queryFn: fetchHealthData,
+    queryKey: ["health-records", options?.timeRange || "all", options?.sortBy || "record_date", options?.sortDirection || "desc"],
+    queryFn: () => fetchHealthData(options),
     staleTime: 30 * 1000,
     refetchOnWindowFocus: true,
   });

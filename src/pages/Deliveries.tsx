@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/common/PageHeader";
 import { DataTable } from "@/components/common/DataTable";
 import { StatusBadge } from "@/components/common/StatusBadge";
+import { DataFilters, TimeRange, SortOption, getDateRangeFromTimeRange } from "@/components/common/DataFilters";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,6 +51,11 @@ interface DeliveryWithCustomer extends Delivery {
   customer: Customer;
 }
 
+const deliverySortOptions: SortOption[] = [
+  { value: "delivery_date", label: "Date" },
+  { value: "status", label: "Status" },
+];
+
 export default function DeliveriesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [deliveries, setDeliveries] = useState<DeliveryWithCustomer[]>([]);
@@ -61,6 +67,10 @@ export default function DeliveriesPage() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [statusFilter, setStatusFilter] = useState("all");
   const [vacationCustomers, setVacationCustomers] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<"daily" | "range">("daily");
+  const [timeRange, setTimeRange] = useState<TimeRange>("1m");
+  const [sortBy, setSortBy] = useState("delivery_date");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [formData, setFormData] = useState({
     customer_id: "",
     delivery_date: format(new Date(), "yyyy-MM-dd"),
@@ -68,39 +78,47 @@ export default function DeliveriesPage() {
   });
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchData();
-    if (searchParams.get("action") === "add") {
-      setDialogOpen(true);
-      setSearchParams({});
-    }
-  }, [searchParams, selectedDate]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     
     try {
       // Fetch all data in parallel for faster loading
-      const [customerRes, deliveryRes, vacationRes] = await Promise.all([
-        supabase
-          .from("customers")
-          .select("id, name, area")
-          .eq("is_active", true)
-          .order("name"),
-        supabase
+      let deliveryQuery;
+      if (viewMode === "daily") {
+        deliveryQuery = supabase
           .from("deliveries")
           .select(`
             *,
             customer:customer_id (id, name, area)
           `)
           .eq("delivery_date", selectedDate)
-          .order("created_at", { ascending: false }),
+          .order(sortBy, { ascending: sortDirection === "asc" });
+      } else {
+        const dateRange = getDateRangeFromTimeRange(timeRange);
+        let query = supabase
+          .from("deliveries")
+          .select(`
+            *,
+            customer:customer_id (id, name, area)
+          `);
+        
+        if (dateRange.start) {
+          query = query.gte("delivery_date", format(dateRange.start, "yyyy-MM-dd"));
+        }
+        if (dateRange.end) {
+          query = query.lte("delivery_date", format(dateRange.end, "yyyy-MM-dd"));
+        }
+        
+        deliveryQuery = query.order(sortBy, { ascending: sortDirection === "asc" });
+      }
+
+      const [customerRes, deliveryRes] = await Promise.all([
         supabase
-          .from("customer_vacations")
-          .select("customer_id")
+          .from("customers")
+          .select("id, name, area")
           .eq("is_active", true)
-          .lte("start_date", selectedDate)
-          .gte("end_date", selectedDate)
+          .order("name"),
+        deliveryQuery,
       ]);
 
       setCustomers(customerRes.data || []);
@@ -115,13 +133,31 @@ export default function DeliveriesPage() {
         setDeliveries((deliveryRes.data as DeliveryWithCustomer[]) || []);
       }
 
-      setVacationCustomers(new Set((vacationRes.data || []).map(v => v.customer_id)));
+      if (viewMode === "daily") {
+        const vacationRes = await supabase
+          .from("customer_vacations")
+          .select("customer_id")
+          .eq("is_active", true)
+          .lte("start_date", selectedDate)
+          .gte("end_date", selectedDate);
+        setVacationCustomers(new Set((vacationRes.data || []).map(v => v.customer_id)));
+      } else {
+        setVacationCustomers(new Set());
+      }
     } catch (error) {
       devError("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [viewMode, selectedDate, timeRange, sortBy, sortDirection, toast]);
+
+  useEffect(() => {
+    fetchData();
+    if (searchParams.get("action") === "add") {
+      setDialogOpen(true);
+      setSearchParams({});
+    }
+  }, [fetchData, searchParams, setSearchParams]);
 
   const handleCreateDelivery = async () => {
     if (!formData.customer_id) {
@@ -293,13 +329,25 @@ export default function DeliveriesPage() {
         }}
       >
         <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <Input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-auto"
-          />
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "daily" | "range")}>
+            <TabsList>
+              <TabsTrigger value="daily">Daily View</TabsTrigger>
+              <TabsTrigger value="range">Date Range</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          
+          {viewMode === "daily" && (
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <Input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="w-auto"
+              />
+            </div>
+          )}
+          
           {stats.pending > 0 && (
             <Button
               variant="outline"
@@ -313,6 +361,19 @@ export default function DeliveriesPage() {
           )}
         </div>
       </PageHeader>
+
+      {/* Data Filters for Range View */}
+      {viewMode === "range" && (
+        <DataFilters
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          sortBy={sortBy}
+          sortOptions={deliverySortOptions}
+          onSortChange={setSortBy}
+          sortDirection={sortDirection}
+          onSortDirectionChange={setSortDirection}
+        />
+      )}
 
       {/* Stats Cards */}
       <div className="grid gap-4 sm:grid-cols-4">
@@ -357,7 +418,11 @@ export default function DeliveriesPage() {
         columns={columns}
         loading={loading}
         searchPlaceholder="Search by customer name..."
-        emptyMessage={`No ${statusFilter === "all" ? "" : statusFilter + " "}deliveries for ${format(new Date(selectedDate), "dd MMM yyyy")}`}
+        emptyMessage={
+          viewMode === "daily"
+            ? `No ${statusFilter === "all" ? "" : statusFilter + " "}deliveries for ${format(new Date(selectedDate), "dd MMM yyyy")}`
+            : `No ${statusFilter === "all" ? "" : statusFilter + " "}deliveries in the selected date range`
+        }
       />
 
       {/* Add Delivery Dialog */}
