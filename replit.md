@@ -52,7 +52,8 @@ supabase/      - Supabase configuration
 - **Product Selection**: Dropdown with products from database (shows name, base price, unit)
 - **Auto-Calculations**: Qty × Rate = Amount per line; sum of all = Subtotal; Subtotal - Discount = Grand Total
 - **UI Features**: Add/remove line items, grid layout with Product | Qty | Unit | Rate | Amount columns
-- **Limitation**: Manual line items calculate totals for invoice record but are not persisted to database (no invoice_items table). For itemized PDFs, use delivery-based invoices.
+- **Database Persistence**: Line items stored in `invoice_items` table (requires migration: `supabase/migrations/20260123180000_add_invoice_items_table.sql`)
+- **PDF Generation**: Automatically fetches from `invoice_items` table for manual invoices, or from `delivery_items` for delivery-based invoices
 
 ## Security Improvements (Jan 2026)
 - **Ledger Race Conditions**: Fixed with per-customer mutex locking in `useLedgerAutomation.ts`

@@ -65,6 +65,17 @@ interface DeliveryItem {
   unit: string;
 }
 
+interface InvoiceItemRecord {
+  id: string;
+  invoice_id: string;
+  product_id: string;
+  product_name: string;
+  quantity: number;
+  unit: string;
+  rate: number;
+  amount: number;
+}
+
 // Type for Supabase delivery query result
 interface DeliveryQueryResult {
   delivery_date: string;
@@ -74,6 +85,98 @@ interface DeliveryQueryResult {
     total_amount: number;
     product: { name: string; unit: string } | null;
   }> | null;
+}
+
+interface GroupedItem {
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  total_amount: number;
+  unit: string;
+  delivery_count: number;
+}
+
+async function fetchInvoiceItems(
+  invoice: Invoice
+): Promise<{ groupedItems: Record<string, GroupedItem>; totalDeliveries: number; isManualInvoice: boolean }> {
+  const { data: invoiceItems } = await supabase
+    .from("invoice_items" as any)
+    .select("*")
+    .eq("invoice_id", invoice.id);
+
+  if (invoiceItems && invoiceItems.length > 0) {
+    const typedItems = invoiceItems as unknown as InvoiceItemRecord[];
+    const grouped = typedItems.reduce((acc: Record<string, GroupedItem>, item) => {
+      const key = item.product_name;
+      if (!acc[key]) {
+        acc[key] = {
+          product_name: item.product_name,
+          quantity: 0,
+          unit_price: item.rate,
+          total_amount: 0,
+          unit: item.unit,
+          delivery_count: 0,
+        };
+      }
+      acc[key].quantity += Number(item.quantity);
+      acc[key].total_amount += Number(item.amount);
+      acc[key].delivery_count += 1;
+      return acc;
+    }, {});
+    return { groupedItems: grouped, totalDeliveries: typedItems.length, isManualInvoice: true };
+  }
+
+  const { data: deliveries } = await supabase
+    .from("deliveries")
+    .select(`
+      delivery_date,
+      delivery_items (
+        quantity,
+        unit_price,
+        total_amount,
+        product:product_id (name, unit)
+      )
+    `)
+    .eq("customer_id", invoice.customer_id)
+    .gte("delivery_date", invoice.billing_period_start)
+    .lte("delivery_date", invoice.billing_period_end)
+    .eq("status", "delivered");
+
+  const items: DeliveryItem[] = [];
+  const typedDeliveries = (deliveries || []) as DeliveryQueryResult[];
+  typedDeliveries.forEach((delivery) => {
+    (delivery.delivery_items || []).forEach((item) => {
+      items.push({
+        product_name: item.product?.name || "Product",
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total_amount: item.total_amount,
+        delivery_date: delivery.delivery_date,
+        unit: item.product?.unit || "unit",
+      });
+    });
+  });
+
+  const grouped = items.reduce((acc: Record<string, GroupedItem>, item) => {
+    const key = item.product_name;
+    if (!acc[key]) {
+      acc[key] = {
+        product_name: item.product_name,
+        quantity: 0,
+        unit_price: item.unit_price,
+        total_amount: 0,
+        unit: item.unit,
+        delivery_count: 0,
+      };
+    }
+    acc[key].quantity += item.quantity;
+    acc[key].total_amount += item.total_amount;
+    acc[key].delivery_count += 1;
+    return acc;
+  }, {});
+
+  const totalDeliveries = Object.values(grouped).reduce((sum, item) => sum + item.delivery_count, 0);
+  return { groupedItems: grouped, totalDeliveries, isManualInvoice: false };
 }
 
 interface Invoice {
@@ -140,64 +243,7 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
         area: null,
       };
 
-      const { data: deliveries } = await supabase
-        .from("deliveries")
-        .select(`
-          delivery_date,
-          delivery_items (
-            quantity,
-            unit_price,
-            total_amount,
-            product:product_id (name, unit)
-          )
-        `)
-        .eq("customer_id", invoice.customer_id)
-        .gte("delivery_date", invoice.billing_period_start)
-        .lte("delivery_date", invoice.billing_period_end)
-        .eq("status", "delivered");
-
-      const items: DeliveryItem[] = [];
-      const typedDeliveries = (deliveries || []) as DeliveryQueryResult[];
-      typedDeliveries.forEach((delivery) => {
-        (delivery.delivery_items || []).forEach((item) => {
-          items.push({
-            product_name: item.product?.name || "Product",
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            total_amount: item.total_amount,
-            delivery_date: delivery.delivery_date,
-            unit: item.product?.unit || "unit",
-          });
-        });
-      });
-
-      interface GroupedItem {
-        product_name: string;
-        quantity: number;
-        unit_price: number;
-        total_amount: number;
-        unit: string;
-        delivery_count: number;
-      }
-      const groupedItems = items.reduce((acc: Record<string, GroupedItem>, item) => {
-        const key = item.product_name;
-        if (!acc[key]) {
-          acc[key] = {
-            product_name: item.product_name,
-            quantity: 0,
-            unit_price: item.unit_price,
-            total_amount: 0,
-            unit: item.unit,
-            delivery_count: 0,
-          };
-        }
-        acc[key].quantity += item.quantity;
-        acc[key].total_amount += item.total_amount;
-        acc[key].delivery_count += 1;
-        return acc;
-      }, {});
-
-      const totalDeliveries = Object.values(groupedItems).reduce((sum, item) => sum + item.delivery_count, 0);
+      const { groupedItems, totalDeliveries, isManualInvoice } = await fetchInvoiceItems(invoice);
 
       const printContent = `
         <!DOCTYPE html>
@@ -299,7 +345,7 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
             </tbody>
           </table>
           
-          <p class="note">* Based on ${totalDeliveries} deliveries during billing period</p>
+          <p class="note">* Based on ${totalDeliveries} ${isManualInvoice ? 'line items' : 'deliveries'} during billing period</p>
 
           <div class="summary">
             <table class="summary-table">
@@ -445,38 +491,8 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
         area: null,
       };
 
-      // Fetch delivery items for this billing period
-      const { data: deliveries } = await supabase
-        .from("deliveries")
-        .select(`
-          delivery_date,
-          delivery_items (
-            quantity,
-            unit_price,
-            total_amount,
-            product:product_id (name, unit)
-          )
-        `)
-        .eq("customer_id", invoice.customer_id)
-        .gte("delivery_date", invoice.billing_period_start)
-        .lte("delivery_date", invoice.billing_period_end)
-        .eq("status", "delivered");
-
-      // Flatten delivery items with proper typing
-      const items: DeliveryItem[] = [];
-      const typedDeliveries = (deliveries || []) as DeliveryQueryResult[];
-      typedDeliveries.forEach((delivery) => {
-        (delivery.delivery_items || []).forEach((item) => {
-          items.push({
-            product_name: item.product?.name || "Product",
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            total_amount: item.total_amount,
-            delivery_date: delivery.delivery_date,
-            unit: item.product?.unit || "unit",
-          });
-        });
-      });
+      // Fetch invoice items (from invoice_items table or delivery_items)
+      const { groupedItems, totalDeliveries, isManualInvoice } = await fetchInvoiceItems(invoice);
 
       // Create PDF
       const doc = new jsPDF({
@@ -654,35 +670,9 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
       yPos += 55;
 
       // Items table
-      if (items.length > 0) {
-        // Group items by product and sum quantities
-        interface GroupedItem {
-          product_name: string;
-          quantity: number;
-          unit_price: number;
-          total_amount: number;
-          unit: string;
-          delivery_count: number;
-        }
-        const groupedItems = items.reduce((acc: Record<string, GroupedItem>, item) => {
-          const key = item.product_name;
-          if (!acc[key]) {
-            acc[key] = {
-              product_name: item.product_name,
-              quantity: 0,
-              unit_price: item.unit_price,
-              total_amount: 0,
-              unit: item.unit,
-              delivery_count: 0,
-            };
-          }
-          acc[key].quantity += item.quantity;
-          acc[key].total_amount += item.total_amount;
-          acc[key].delivery_count += 1;
-          return acc;
-        }, {});
-
-        const tableData = Object.values(groupedItems).map((item, index) => [
+      const groupedItemsArray = Object.values(groupedItems) as GroupedItem[];
+      if (groupedItemsArray.length > 0) {
+        const tableData = groupedItemsArray.map((item, index) => [
           index + 1,
           item.product_name,
           item.quantity.toFixed(2),
@@ -722,13 +712,12 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
           },
         });
 
-        // Add delivery summary below the table
+        // Add delivery/items summary below the table
         yPos = (doc as any).lastAutoTable.finalY + 5;
-        const totalDeliveries = Object.values(groupedItems).reduce((sum, item) => sum + item.delivery_count, 0);
         doc.setFontSize(8);
         doc.setTextColor(...darkColor);
         doc.setFont("helvetica", "italic");
-        doc.text(`* Based on ${totalDeliveries} deliveries during billing period`, margin, yPos);
+        doc.text(`* Based on ${totalDeliveries} ${isManualInvoice ? 'line items' : 'deliveries'} during billing period`, margin, yPos);
         yPos += 8;
       } else {
         // No items - show period summary

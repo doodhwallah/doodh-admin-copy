@@ -235,7 +235,7 @@ export default function BillingPage() {
 
     setSaving(true);
 
-    const { error } = await supabase.from("invoices").insert({
+    const { data: invoiceData, error: invoiceError } = await supabase.from("invoices").insert({
       invoice_number: generateInvoiceNumber(),
       customer_id: formData.customer_id,
       billing_period_start: formData.billing_period_start,
@@ -246,31 +246,54 @@ export default function BillingPage() {
       final_amount: finalAmount,
       payment_status: "pending",
       due_date: format(new Date(new Date().setDate(new Date().getDate() + 15)), "yyyy-MM-dd"),
-    });
+    }).select("id").single();
+
+    if (invoiceError) {
+      setSaving(false);
+      toast({
+        title: "Error creating invoice",
+        description: invoiceError.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const invoiceItemsToInsert = validItems.map(item => ({
+      invoice_id: invoiceData.id,
+      product_id: item.product_id,
+      product_name: item.product_name,
+      quantity: parseFloat(item.quantity),
+      unit: item.unit || "unit",
+      rate: parseFloat(item.rate),
+      amount: item.amount,
+    }));
+
+    const { error: itemsError } = await supabase.from("invoice_items" as any).insert(invoiceItemsToInsert);
 
     setSaving(false);
 
-    if (error) {
+    if (itemsError) {
       toast({
-        title: "Error creating invoice",
-        description: error.message,
+        title: "Invoice created but items failed",
+        description: itemsError.message,
         variant: "destructive",
       });
     } else {
       toast({
         title: "Invoice created",
-        description: "The invoice has been generated",
+        description: "The invoice has been generated with all line items",
       });
-      setDialogOpen(false);
-      setLineItems([createEmptyLineItem()]);
-      setFormData({
-        customer_id: "",
-        billing_period_start: format(new Date(new Date().setDate(1)), "yyyy-MM-dd"),
-        billing_period_end: format(new Date(), "yyyy-MM-dd"),
-        discount_amount: "0",
-      });
-      fetchData();
     }
+    
+    setDialogOpen(false);
+    setLineItems([createEmptyLineItem()]);
+    setFormData({
+      customer_id: "",
+      billing_period_start: format(new Date(new Date().setDate(1)), "yyyy-MM-dd"),
+      billing_period_end: format(new Date(), "yyyy-MM-dd"),
+      discount_amount: "0",
+    });
+    fetchData();
   };
 
   const handleRecordPayment = async () => {
