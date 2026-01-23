@@ -1,15 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getCorsHeaders, handleCorsOptions, corsJsonResponse } from "../_shared/cors.ts";
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return handleCorsOptions(req);
   }
 
   try {
@@ -20,46 +15,29 @@ serve(async (req) => {
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     const { action, phone, pin, currentPin, newPin, customerId } = await req.json();
-    console.log(`Customer auth action: ${action} for phone: ${phone?.slice(-4) || 'N/A'}`);
 
     switch (action) {
       case 'register': {
         if (!phone || !pin) {
-          return new Response(
-            JSON.stringify({ success: false, error: 'Phone and PIN are required' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          return corsJsonResponse(req, { success: false, error: 'Phone and PIN are required' }, 400);
         }
 
-        // Validate PIN format (6 digits)
         if (!/^\d{6}$/.test(pin)) {
-          return new Response(
-            JSON.stringify({ success: false, error: 'PIN must be 6 digits' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          return corsJsonResponse(req, { success: false, error: 'PIN must be 6 digits' }, 400);
         }
 
-        // Call the register function
         const { data, error } = await supabaseAdmin.rpc('register_customer_account', {
           _phone: phone,
           _pin: pin
         });
 
         if (error) {
-          console.error('Registration error:', error);
-          return new Response(
-            JSON.stringify({ success: false, error: error.message }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          return corsJsonResponse(req, { success: false, error: error.message }, 400);
         }
 
-        console.log('Registration result:', data);
-
-        // If approved, create auth user
         if (data?.approved) {
           const email = `customer_${phone}@doodhwallah.app`;
           
-          // Create auth user
           const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
             email,
             password: pin,
@@ -72,71 +50,44 @@ serve(async (req) => {
           });
 
           if (authError) {
-            console.error('Auth user creation error:', authError);
-            // Clean up customer account if auth fails
             await supabaseAdmin.from('customer_accounts').delete().eq('customer_id', data.customer_id);
-            return new Response(
-              JSON.stringify({ success: false, error: 'Failed to create auth account' }),
-              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
+            return corsJsonResponse(req, { success: false, error: 'Failed to create auth account' }, 500);
           }
 
-          // Link auth user to customer account
           await supabaseAdmin.from('customer_accounts')
             .update({ user_id: authUser.user.id })
             .eq('customer_id', data.customer_id);
-
-          console.log('Customer registered and auth user created:', authUser.user.id);
         }
 
-        return new Response(
-          JSON.stringify(data),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return corsJsonResponse(req, data);
       }
 
       case 'login': {
         if (!phone || !pin) {
-          return new Response(
-            JSON.stringify({ success: false, error: 'Phone and PIN are required' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          return corsJsonResponse(req, { success: false, error: 'Phone and PIN are required' }, 400);
         }
 
-        // Verify PIN using database function
         const { data: verifyResult, error: verifyError } = await supabaseAdmin.rpc('verify_customer_pin', {
           _phone: phone,
           _pin: pin
         });
 
         if (verifyError) {
-          console.error('PIN verification error:', verifyError);
-          return new Response(
-            JSON.stringify({ success: false, error: verifyError.message }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          return corsJsonResponse(req, { success: false, error: verifyError.message }, 400);
         }
 
         if (!verifyResult || verifyResult.length === 0) {
-          return new Response(
-            JSON.stringify({ success: false, error: 'Invalid phone number or PIN' }),
-            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          return corsJsonResponse(req, { success: false, error: 'Invalid phone number or PIN' }, 401);
         }
 
         const account = verifyResult[0];
 
         if (!account.is_approved) {
-          return new Response(
-            JSON.stringify({ success: false, error: 'Account pending approval', pending: true }),
-            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          return corsJsonResponse(req, { success: false, error: 'Account pending approval', pending: true }, 403);
         }
 
-        // Get or create auth session
         const email = `customer_${phone}@doodhwallah.app`;
         
-        // Try to sign in
         const { data: signInData, error: signInError } = await supabaseAdmin.auth.admin.generateLink({
           type: 'magiclink',
           email,
@@ -146,9 +97,6 @@ serve(async (req) => {
         });
 
         if (signInError) {
-          console.error('Sign in error:', signInError);
-          
-          // If user doesn't exist, create them
           if (signInError.message.includes('User not found')) {
             const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
               email,
@@ -162,20 +110,15 @@ serve(async (req) => {
             });
 
             if (createError) {
-              return new Response(
-                JSON.stringify({ success: false, error: 'Authentication failed' }),
-                { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-              );
+              return corsJsonResponse(req, { success: false, error: 'Authentication failed' }, 500);
             }
 
-            // Update customer account with user_id
             await supabaseAdmin.from('customer_accounts')
               .update({ user_id: newUser.user.id })
               .eq('customer_id', account.customer_id);
           }
         }
 
-        // Generate a proper session by signing in with password
         const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
         const { data: session, error: sessionError } = await supabaseClient.auth.signInWithPassword({
           email,
@@ -183,75 +126,50 @@ serve(async (req) => {
         });
 
         if (sessionError) {
-          console.error('Session creation error:', sessionError);
-          
-          // Try to update password and retry
           const { data: userData } = await supabaseAdmin.auth.admin.listUsers();
           const existingUser = userData?.users?.find(u => u.email === email);
           
           if (existingUser) {
-            // Update password AND confirm email
             await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
               password: pin,
               email_confirm: true
             });
 
-            // Retry login
             const { data: retrySession, error: retryError } = await supabaseClient.auth.signInWithPassword({
               email,
               password: pin
             });
 
             if (retryError) {
-              return new Response(
-                JSON.stringify({ success: false, error: 'Authentication failed' }),
-                { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-              );
+              return corsJsonResponse(req, { success: false, error: 'Authentication failed' }, 500);
             }
 
-            return new Response(
-              JSON.stringify({
-                success: true,
-                session: retrySession.session,
-                customer_id: account.customer_id
-              }),
-              { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
+            return corsJsonResponse(req, {
+              success: true,
+              session: retrySession.session,
+              customer_id: account.customer_id
+            });
           }
 
-          return new Response(
-            JSON.stringify({ success: false, error: 'Authentication failed' }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          return corsJsonResponse(req, { success: false, error: 'Authentication failed' }, 500);
         }
 
-        return new Response(
-          JSON.stringify({
-            success: true,
-            session: session.session,
-            customer_id: account.customer_id
-          }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return corsJsonResponse(req, {
+          success: true,
+          session: session.session,
+          customer_id: account.customer_id
+        });
       }
 
       case 'change-pin': {
         if (!customerId || !currentPin || !newPin) {
-          return new Response(
-            JSON.stringify({ success: false, error: 'Customer ID, current PIN, and new PIN are required' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          return corsJsonResponse(req, { success: false, error: 'Customer ID, current PIN, and new PIN are required' }, 400);
         }
 
-        // Validate new PIN format
         if (!/^\d{6}$/.test(newPin)) {
-          return new Response(
-            JSON.stringify({ success: false, error: 'New PIN must be 6 digits' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          return corsJsonResponse(req, { success: false, error: 'New PIN must be 6 digits' }, 400);
         }
 
-        // Call the update function
         const { data, error } = await supabaseAdmin.rpc('update_customer_pin', {
           _customer_id: customerId,
           _current_pin: currentPin,
@@ -259,14 +177,9 @@ serve(async (req) => {
         });
 
         if (error) {
-          console.error('PIN update error:', error);
-          return new Response(
-            JSON.stringify({ success: false, error: error.message }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          return corsJsonResponse(req, { success: false, error: error.message }, 400);
         }
 
-        // Also update auth password
         const { data: account } = await supabaseAdmin
           .from('customer_accounts')
           .select('user_id, phone')
@@ -279,23 +192,13 @@ serve(async (req) => {
           });
         }
 
-        return new Response(
-          JSON.stringify(data),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return corsJsonResponse(req, data);
       }
 
       default:
-        return new Response(
-          JSON.stringify({ success: false, error: 'Invalid action' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return corsJsonResponse(req, { success: false, error: 'Invalid action' }, 400);
     }
   } catch (error) {
-    console.error('Customer auth error:', error);
-    return new Response(
-      JSON.stringify({ success: false, error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return corsJsonResponse(req, { success: false, error: 'Internal server error' }, 500);
   }
 });

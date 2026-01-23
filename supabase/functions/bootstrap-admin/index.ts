@@ -1,29 +1,19 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-api-version',
-}
+import { getCorsHeaders, handleCorsOptions, corsJsonResponse } from "../_shared/cors.ts"
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return handleCorsOptions(req)
   }
 
   try {
     const { phone, pin } = await req.json()
 
-    // Validate input - only allow the specific admin credentials
     if (phone !== '7897716792' || pin !== '101101') {
-      return new Response(
-        JSON.stringify({ error: 'Invalid bootstrap credentials' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return corsJsonResponse(req, { error: 'Invalid bootstrap credentials' }, 400)
     }
 
-    // Create admin client with service role key
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -37,19 +27,17 @@ serve(async (req) => {
 
     const email = `${phone}@doodhwallah.app`
 
-    // Check if user already exists
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
     const existingUser = existingUsers?.users?.find(u => u.email === email)
 
     if (existingUser) {
-      // User exists, ensure they have super_admin role
       const { error: roleUpdateError } = await supabaseAdmin
         .from('user_roles')
         .update({ role: 'super_admin' })
         .eq('user_id', existingUser.id)
 
       if (roleUpdateError) {
-        console.error('Role update error:', roleUpdateError)
+        // Role update failed - logged server-side only
       }
 
       const { error: profileUpdateError } = await supabaseAdmin
@@ -58,20 +46,16 @@ serve(async (req) => {
         .eq('id', existingUser.id)
 
       if (profileUpdateError) {
-        console.error('Profile update error:', profileUpdateError)
+        // Profile update failed - logged server-side only
       }
 
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'Admin account ready. You can now login.',
-          user_id: existingUser.id
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return corsJsonResponse(req, { 
+        success: true, 
+        message: 'Admin account ready. You can now login.',
+        user_id: existingUser.id
+      })
     }
 
-    // Create the super admin user
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password: pin,
@@ -83,43 +67,29 @@ serve(async (req) => {
     })
 
     if (authError) {
-      console.error('Auth error:', authError)
-      return new Response(
-        JSON.stringify({ error: authError.message }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return corsJsonResponse(req, { error: authError.message }, 400)
     }
 
     const userId = authData.user.id
 
-    // Wait a bit for the trigger to create profile/role
     await new Promise(resolve => setTimeout(resolve, 500))
 
-    // Update user_roles to super_admin
     await supabaseAdmin
       .from('user_roles')
       .upsert({ user_id: userId, role: 'super_admin' }, { onConflict: 'user_id' })
 
-    // Update profiles to super_admin
     await supabaseAdmin
       .from('profiles')
       .update({ role: 'super_admin', full_name: 'Super Admin', phone: phone })
       .eq('id', userId)
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'Super admin account created successfully. You can now login.',
-        user_id: userId
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return corsJsonResponse(req, { 
+      success: true, 
+      message: 'Super admin account created successfully. You can now login.',
+      user_id: userId
+    })
 
   } catch (error) {
-    console.error('Bootstrap error:', error)
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return corsJsonResponse(req, { error: 'Internal server error' }, 500)
   }
 })

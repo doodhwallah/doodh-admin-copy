@@ -1,30 +1,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { getCorsHeaders, handleCorsOptions, corsJsonResponse } from "../_shared/cors.ts"
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return handleCorsOptions(req)
   }
 
   try {
     const vercelUrl = Deno.env.get('VERCEL_WEBSITE_URL')
     
     if (!vercelUrl) {
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'Ping received (no Vercel URL configured)',
-          timestamp: new Date().toISOString()
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200 
-        }
-      )
+      return corsJsonResponse(req, { 
+        success: true, 
+        message: 'Ping received (no Vercel URL configured)',
+        timestamp: new Date().toISOString()
+      })
     }
 
     const response = await fetch(vercelUrl, {
@@ -32,29 +22,17 @@ serve(async (req) => {
       headers: { 'User-Agent': 'DoodhWallah-KeepAlive/1.0' }
     })
 
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        message: 'Keep-alive ping successful',
-        vercel_status: response.status,
-        timestamp: new Date().toISOString()
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
-    )
+    return corsJsonResponse(req, { 
+      success: true,
+      message: 'Keep-alive ping successful',
+      vercel_status: response.status,
+      timestamp: new Date().toISOString()
+    })
   } catch (error) {
-    return new Response(
-      JSON.stringify({ 
-        success: false,
-        error: error.message,
-        timestamp: new Date().toISOString()
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
-      }
-    )
+    return corsJsonResponse(req, { 
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, 500)
   }
 })
