@@ -1,0 +1,237 @@
+--------- beginning of main
+--------- beginning of system
+--------- beginning of crash
+2026-01-22 21:28:53.348  1350-1350  vendor.qti...al-service ven...qti.hardware.perf-hal-service  E  ExtendedPerfBoost: extended_perfboost_verification() 738: Ok, set boost params. hintid=4226 hinttype=1 prio=2, clientpid=2582 packagename=com.doodhwallah.app params=boost:1 cpu0:1804800 cpu4:2496000 cpu7:2592000 cpumask:ff
+2026-01-22 21:28:53.370  1350-1350  vendor.qti...al-service ven...qti.hardware.perf-hal-service  E  ExtendedPerfBoost: extended_perfboost_verification() 738: Ok, set boost params. hintid=4226 hinttype=1 prio=2, clientpid=2582 packagename=com.doodhwallah.app params=boost:1 cpu0:1804800 cpu4:2496000 cpu7:2592000 cpumask:ff
+2026-01-22 21:28:53.380 15335-15335 ForceDarkHelperStubImpl com.doodhwallah.app                  I  setViewRootImplForceDark: false for com.doodhwallah.app.MainActivity@cfb3320, reason: AppDarkModeEnable
+2026-01-22 21:28:53.381 15335-27774 AppScoutStateMachine    com.doodhwallah.app                  D  15335-ScoutStateMachinecreated
+2026-01-22 21:28:53.400  8401-9500  SuggestManager          com.miui.securitycenter.remote       E  openApp name = com.doodhwallah.app
+2026-01-22 21:28:53.406 15335-15335 Capacitor               com.doodhwallah.app                  D  App restarted
+2026-01-22 21:28:53.410 15335-15335 Capacitor               com.doodhwallah.app                  D  App started
+2026-01-22 21:28:53.413 15335-15335 Capacitor               com.doodhwallah.app                  D  App resumed
+2026-01-22 21:28:53.431 15335-15335 VRI[MainActivity]       com.doodhwallah.app                  D  vri.reportNextDraw android.view.ViewRootImpl.performTraversals:2957 android.view.ViewRootImpl.doTraversal:36 android.view.ViewRootImpl$TraversalRunnable.run:7 android.view.Choreographer$CallbackRecord.run:20 android.view.Choreographer$CallbackRecord.run:20 
+2026-01-22 21:28:53.431 15335-15335 VRI[MainActivity]       com.doodhwallah.app                  D  vri.Setup new sync id=2 syncSeqId=0
+2026-01-22 21:28:53.456 15335-15335 VRI[MainActivity]       com.doodhwallah.app                  D  vri.reportDrawFinished syncSeqId=0 android.view.ViewRootImpl.lambda$createSyncIfNeeded$4$android-view-ViewRootImpl:5 android.view.ViewRootImpl$$ExternalSyntheticLambda1.run:6 android.os.Handler.handleCallback:2 android.os.Handler.dispatchMessage:4 android.os.Looper.loopOnce:182 
+2026-01-22 21:28:53.490 15335-15335 DecorView[]             com.doodhwallah.app                  D  onWindowFocusChanged hasWindowFocus true
+2026-01-22 21:28:53.501 15335-15335 HandWritingStubImpl     com.doodhwallah.app                  I  refreshLastKeyboardType: 1
+2026-01-22 21:28:53.501 15335-15335 HandWritingStubImpl     com.doodhwallah.app                  I  getCurrentKeyboardType: 1
+2026-01-22 21:28:53.504  4033-5191  ActivityManagerWrapper  com.miui.home                        E  getRecentTasks: mainTaskId=1612   userId=0   baseIntent=Intent { act=android.intent.action.MAIN flag=268435456 cmp=ComponentInfo{com.doodhwallah.app/com.doodhwallah.app.MainActivity} }
+2026-01-22 21:28:56.403  1350-1350  vendor.qti...al-service ven...qti.hardware.perf-hal-service  E  ExtendedPerfBoost: extended_perfboost_verification() 742: Ok, set boost params. hintid=4224 hinttype=1 prio=0, clientpid=2582 packagename=com.doodhwallah.app params=boost:1 cpu0:1804800 cpu4:2496000 cpu7:2592000
+2026-01-22 21:28:58.506  1350-1350  vendor.qti...al-service ven...qti.hardware.perf-hal-service  E  ExtendedPerfBoost: extended_perfboost_verification() 742: Ok, set boost params. hintid=4224 hinttype=1 prio=0, clientpid=2582 packagename=com.doodhwallah.app params=boost:1 cpu0:1804800 cpu4:2496000 cpu7:2592000
+2026-01-22 21:28:58.866  1350-1350  vendor.qti...al-service ven...qti.hardware.perf-hal-service  E  ExtendedPerfBoost: extended_perfboost_verification() 742: Ok, set boost params. hintid=4224 hinttype=1 prio=0, clientpid=2582 packagename=com.doodhwallah.app params=boost:1 cpu0:1804800 cpu4:2496000 cpu7:2592000
+2026-01-22 21:29:30.302 15335-15335 DecorView[]             com.doodhwallah.app                  D  onWindowFocusChanged hasWindowFocus false
+2026-01-22 21:29:30.719 15335-15335 Capacitor               com.doodhwallah.app                  D  App paused
+2026-01-22 21:29:30.754 15335-15335 Capacitor               com.doodhwallah.app                  D  App stopped
+2026-01-22 21:29:30.758 15335-15335 Capacitor               com.doodhwallah.app                  D  Saving instance state!
+2026-01-22 21:29:30.759 15335-15335 DecorView[]             com.doodhwallah.app                  D  onWindowFocusChanged hasWindowFocus false
+2026-01-22 21:29:30.826  4033-5191  ActivityManagerWrapper  com.miui.home                        E  getRecentTasks: mainTaskId=1612   userId=0   baseIntent=Intent { act=android.intent.action.MAIN flag=268435456 cmp=ComponentInfo{com.doodhwallah.app/com.doodhwallah.app.MainActivity} }
+2026-01-22 21:29:30.835  4033-5191  ActivityManagerWrapper  com.miui.home                        E  getRecentTasks: mainTaskId=1612   userId=0   baseIntent=Intent { act=android.intent.action.MAIN flag=268435456 cmp=ComponentInfo{com.doodhwallah.app/com.doodhwallah.app.MainActivity} }
+2026-01-22 21:29:31.252 15335-15335 Capacitor               com.doodhwallah.app                  D  App destroyed
+2026-01-22 21:29:35.340  1350-1350  vendor.qti...al-service ven...qti.hardware.perf-hal-service  E  ExtendedPerfBoost: extended_perfboost_verification() 738: Ok, set boost params. hintid=4225 hinttype=1 prio=3, clientpid=2582 packagename=com.doodhwallah.app params=boost:1 cpu0:1804800 cpu4:2496000 cpu7:2592000 cpumask:ff
+2026-01-22 21:29:35.366  5697-5697  Zygote                  com.doodhwallah.app                  E  process_name_ptr:5697 com.doodhwallah.app
+2026-01-22 21:29:35.366  5697-5697  zygote64                com.doodhwallah.app                  E  Failed to parse /product/etc/mfz.xml: Tinyxml2 error (3): Error=XML_ERROR_FILE_NOT_FOUND ErrorID=3 (0x3) Line number=0: filename=/product/etc/mfz.xml
+2026-01-22 21:29:35.370  5697-5697  doodhwallah.app         com.doodhwallah.app                  I  Late-enabling -Xcheck:jni
+2026-01-22 21:29:35.379  4033-5191  ActivityManagerWrapper  com.miui.home                        E  getRecentTasks: mainTaskId=1614   userId=0   baseIntent=Intent { act=android.intent.action.MAIN flag=270532608 cmp=ComponentInfo{com.doodhwallah.app/com.doodhwallah.app.MainActivity} }
+2026-01-22 21:29:35.394  5697-5697  MessageMonitor          com.doodhwallah.app                  I  Load libmiui_runtime
+2026-01-22 21:29:35.404  5697-5697  MQSEventManagerDelegate com.doodhwallah.app                  E  failed to get MQSService.
+2026-01-22 21:29:35.404  5697-5697  ActivityThread          com.doodhwallah.app                  W  registerApplicationScoutThread result:false
+2026-01-22 21:29:35.406  5697-5697  Compatibil...geReporter com.doodhwallah.app                  D  Compat change id reported: 171979766; UID 10331; state: ENABLED
+2026-01-22 21:29:35.407  5697-30697 AppScoutStateMachine    com.doodhwallah.app                  D  5697-ScoutStateMachinecreated
+2026-01-22 21:29:35.415  8401-9500  SuggestManager          com.miui.securitycenter.remote       E  openApp name = com.doodhwallah.app
+2026-01-22 21:29:35.420  5697-5697  Perf                    com.doodhwallah.app                  I  Connecting to perf service.
+2026-01-22 21:29:35.422  5697-5697  GraphicsEnvironment     com.doodhwallah.app                  V  ANGLE Developer option for 'com.doodhwallah.app' set to: 'default'
+2026-01-22 21:29:35.423  5697-5697  GraphicsEnvironment     com.doodhwallah.app                  V  ANGLE GameManagerService for com.doodhwallah.app: false
+2026-01-22 21:29:35.423  5697-5697  GraphicsEnvironment     com.doodhwallah.app                  V  Updatable production driver is not supported on the device.
+2026-01-22 21:29:35.425  5697-5697  ForceDarkHelperStubImpl com.doodhwallah.app                  I  initialize for com.doodhwallah.app , ForceDarkAppConfig: null
+2026-01-22 21:29:35.428  5697-5697  doodhwallah.app         com.doodhwallah.app                  D  JNI_OnLoad success
+2026-01-22 21:29:35.428  5697-5697  MiuiForceDarkConfig     com.doodhwallah.app                  I  setConfig density:2.750000, mainRule:0, secondaryRule:0, tertiaryRule:0
+2026-01-22 21:29:35.431  5697-5697  libc                    com.doodhwallah.app                  W  Access denied finding property "ro.vendor.df.effect.conflict"
+2026-01-22 21:29:35.432  5697-5697  NetworkSecurityConfig   com.doodhwallah.app                  D  No Network Security Config specified, using platform default
+2026-01-22 21:29:35.432  5697-5697  NetworkSecurityConfig   com.doodhwallah.app                  D  No Network Security Config specified, using platform default
+2026-01-22 21:29:35.441  5697-5697  MiuiMultiWindowAdapter  com.doodhwallah.app                  D  MiuiMultiWindowAdapter::getFreeformVideoWhiteListInSystem::LIST_ABOUT_SUPPORT_LANDSCAPE_VIDEO = [com.hunantv.imgo.activity, com.tencent.qqlive, com.qiyi.video, com.hunantv.imgo.activity.inter, com.tencent.qqlivei18n, com.iqiyi.i18n, tv.danmaku.bili]
+2026-01-22 21:29:35.446  5697-5697  AppCompatDelegate       com.doodhwallah.app                  D  Checking for metadata for AppLocalesMetadataHolderService : Service not found
+2026-01-22 21:29:35.451  5697-5697  Drawable                com.doodhwallah.app                  D  setShouldDeclineWhiteColor false
+2026-01-22 21:29:35.463  4033-5191  ActivityManagerWrapper  com.miui.home                        E  getRecentTasks: mainTaskId=1614   userId=0   baseIntent=Intent { act=android.intent.action.MAIN flag=270532608 cmp=ComponentInfo{com.doodhwallah.app/com.doodhwallah.app.MainActivity} }
+2026-01-22 21:29:35.468  4033-5191  ActivityManagerWrapper  com.miui.home                        E  getRecentTasks: mainTaskId=1614   userId=0   baseIntent=Intent { act=android.intent.action.MAIN flag=270532608 cmp=ComponentInfo{com.doodhwallah.app/com.doodhwallah.app.MainActivity} }
+2026-01-22 21:29:35.469  5697-5697  IS_CTS_MODE             com.doodhwallah.app                  D  false
+2026-01-22 21:29:35.469  5697-5697  MULTI_WINDOW_ENABLED    com.doodhwallah.app                  D  false
+2026-01-22 21:29:35.470  5697-5697  DecorView[]             com.doodhwallah.app                  D  getWindowModeFromSystem  windowmode is 1
+2026-01-22 21:29:35.481  5697-5697  doodhwallah.app         com.doodhwallah.app                  W  Accessing hidden method Landroid/view/View;->computeFitSystemWindows(Landroid/graphics/Rect;Landroid/graphics/Rect;)Z (unsupported, reflection, allowed)
+2026-01-22 21:29:35.481  5697-5697  doodhwallah.app         com.doodhwallah.app                  W  Accessing hidden method Landroid/view/ViewGroup;->makeOptionalFitsSystemWindows()V (unsupported, reflection, allowed)
+2026-01-22 21:29:35.486  5697-5697  WebViewFactory          com.doodhwallah.app                  I  Loading com.google.android.webview version 143.0.7499.193 (code 749919333)
+2026-01-22 21:29:35.487  5697-5697  ziparchive              com.doodhwallah.app                  W  Unable to open '/data/app/~~BocxmIZxLbsXVOAmhEjdhA==/com.google.android.trichromelibrary_749919333-WI_cjIQg8YADNPtlsASp3w==/base.dm': No such file or directory
+2026-01-22 21:29:35.487  5697-5697  ziparchive              com.doodhwallah.app                  W  Unable to open '/data/app/~~BocxmIZxLbsXVOAmhEjdhA==/com.google.android.trichromelibrary_749919333-WI_cjIQg8YADNPtlsASp3w==/base.dm': No such file or directory
+2026-01-22 21:29:35.487  5697-5697  doodhwallah.app         com.doodhwallah.app                  W  Entry not found
+2026-01-22 21:29:35.506  5697-5697  cr_WVCFactoryProvider   com.doodhwallah.app                  I  version=143.0.7499.193 (749919333) minSdkVersion=29 multiprocess=true packageId=127 splits=<none>
+2026-01-22 21:29:35.520  5697-5697  cr_LibraryLoader        com.doodhwallah.app                  I  Successfully loaded native library
+2026-01-22 21:29:35.520  5697-5697  cr_CachingUmaRecorder   com.doodhwallah.app                  I  Flushed 18 samples from 18 histograms, 0 samples were dropped.
+2026-01-22 21:29:35.522  5697-5697  cr_CombinedPProvider    com.doodhwallah.app                  I  #registerProvider() provider:WV.jk@b7ce44 isPolicyCacheEnabled:false policyProvidersSize:0
+2026-01-22 21:29:35.523  5697-5697  cr_PolicyProvider       com.doodhwallah.app                  I  #setManagerAndSource() 0
+2026-01-22 21:29:35.529  5697-5697  cr_DisplayManager       com.doodhwallah.app                  I  Is Display Topology available: false
+2026-01-22 21:29:35.541  5697-5697  cr_CombinedPProvider    com.doodhwallah.app                  I  #linkNativeInternal() 1
+2026-01-22 21:29:35.541  5697-5697  Compatibil...geReporter com.doodhwallah.app                  D  Compat change id reported: 183155436; UID 10331; state: ENABLED
+2026-01-22 21:29:35.541  5697-5697  cr_AppResProvider       com.doodhwallah.app                  I  #getApplicationRestrictionsFromUserManager() Bundle[EMPTY_PARCEL]
+2026-01-22 21:29:35.542  5697-5697  cr_PolicyProvider       com.doodhwallah.app                  I  #notifySettingsAvailable() 0
+2026-01-22 21:29:35.542  5697-5697  cr_CombinedPProvider    com.doodhwallah.app                  I  #onSettingsAvailable() 0
+2026-01-22 21:29:35.542  5697-5697  cr_CombinedPProvider    com.doodhwallah.app                  I  #flushPolicies()
+2026-01-22 21:29:35.563  5697-30747 chromium                com.doodhwallah.app                  W  [WARNING:net/dns/dns_config_service_android.cc:69] Failed to read DnsConfig.
+2026-01-22 21:29:35.569  5697-5697  chromium                com.doodhwallah.app                  W  [WARNING:android_webview/browser/network_service/net_helpers.cc:143] HTTP Cache size is: 20971520
+2026-01-22 21:29:35.575  5697-5697  Compatibil...geReporter com.doodhwallah.app                  D  Compat change id reported: 214741472; UID 10331; state: ENABLED
+2026-01-22 21:29:35.583  5697-5697  Compatibil...geReporter com.doodhwallah.app                  D  Compat change id reported: 171228096; UID 10331; state: ENABLED
+2026-01-22 21:29:35.602  5697-5697  Capacitor               com.doodhwallah.app                  D  Starting BridgeActivity
+2026-01-22 21:29:35.608  5697-5697  Capacitor               com.doodhwallah.app                  D  Registering plugin instance: CapacitorCookies
+2026-01-22 21:29:35.610  5697-5697  Capacitor               com.doodhwallah.app                  D  Registering plugin instance: WebView
+2026-01-22 21:29:35.611  5697-5697  Capacitor               com.doodhwallah.app                  D  Registering plugin instance: CapacitorHttp
+2026-01-22 21:29:35.612  5697-5697  Capacitor               com.doodhwallah.app                  D  Registering plugin instance: SystemBars
+2026-01-22 21:29:35.618  5697-5697  Capacitor               com.doodhwallah.app                  W  Unable to read file at path public/plugins
+2026-01-22 21:29:35.620  5697-5697  Capacitor               com.doodhwallah.app                  D  Loading app at https://doodhwallah.vercel.app/
+2026-01-22 21:29:35.633  5697-30745 cr_media                com.doodhwallah.app                  W  BLUETOOTH_CONNECT permission is missing.
+2026-01-22 21:29:35.635  5697-30745 cr_media                com.doodhwallah.app                  W  getBluetoothAdapter() requires BLUETOOTH permission
+2026-01-22 21:29:35.635  5697-30745 cr_media                com.doodhwallah.app                  W  registerBluetoothIntentsIfNeeded: Requires BLUETOOTH permission
+2026-01-22 21:29:35.638  5697-5697  Capacitor               com.doodhwallah.app                  D  App started
+2026-01-22 21:29:35.640  5697-5697  Capacitor               com.doodhwallah.app                  D  App resumed
+2026-01-22 21:29:35.653  5697-5697  FramePredict            com.doodhwallah.app                  D  FramePredict init: false
+2026-01-22 21:29:35.653  5697-5697  FramePredict            com.doodhwallah.app                  D  start to set mThreadedRenderer.
+2026-01-22 21:29:35.653  5697-5697  ForceDarkHelperStubImpl com.doodhwallah.app                  I  setViewRootImplForceDark: false for com.doodhwallah.app.MainActivity@cfb3320, reason: AppDarkModeEnable
+2026-01-22 21:29:35.656  5697-30765 AdrenoVK-0              com.doodhwallah.app                  I  ===== BEGIN DUMP OF OVERRIDDEN SETTINGS =====
+2026-01-22 21:29:35.656  5697-30765 AdrenoVK-0              com.doodhwallah.app                  I  ===== END DUMP OF OVERRIDDEN SETTINGS =====
+2026-01-22 21:29:35.660  5697-30765 AdrenoVK-0              com.doodhwallah.app                  I  QUALCOMM build          : 5e81ec0141, Icc5bd9b9d5
+                                                                                                    Build Date              : 11/07/22
+                                                                                                    Shader Compiler Version : EV031.36.08.11
+                                                                                                    Local Branch            : 
+                                                                                                    Remote Branch           : 
+                                                                                                    Remote Branch           : 
+                                                                                                    Reconstruct Branch      : 
+2026-01-22 21:29:35.660  5697-30765 AdrenoVK-0              com.doodhwallah.app                  I  Build Config            : S P 12.1.1 AArch64
+2026-01-22 21:29:35.660  5697-30765 AdrenoVK-0              com.doodhwallah.app                  I  Driver Path             : /vendor/lib64/hw/vulkan.adreno.so
+2026-01-22 21:29:35.660  5697-30765 AdrenoVK-0              com.doodhwallah.app                  I  Driver Version          : 0615.50
+2026-01-22 21:29:35.660  5697-30765 AdrenoVK-0              com.doodhwallah.app                  I  PFP                     : 0x01730155
+2026-01-22 21:29:35.660  5697-30765 AdrenoVK-0              com.doodhwallah.app                  I  ME                      : 0x00000000
+2026-01-22 21:29:35.660  5697-30765 AdrenoVK-0              com.doodhwallah.app                  I  Application Name    : 
+                                                                                                    Application Version : 0x00000001
+                                                                                                    Engine Name         : 
+                                                                                                    Engine Version      : 0x00000001
+                                                                                                    Api Version         : 0x00403000
+2026-01-22 21:29:35.660  5697-30765 AdrenoGLES-0            com.doodhwallah.app                  I  QUALCOMM build                   : 5e81ec0141, Icc5bd9b9d5
+                                                                                                    Build Date                       : 11/07/22
+                                                                                                    OpenGL ES Shader Compiler Version: EV031.36.08.11
+                                                                                                    Local Branch                     : 
+                                                                                                    Remote Branch                    : 
+                                                                                                    Remote Branch                    : 
+                                                                                                    Reconstruct Branch               : 
+2026-01-22 21:29:35.660  5697-30765 AdrenoGLES-0            com.doodhwallah.app                  I  Build Config                     : S P 12.1.1 AArch64
+2026-01-22 21:29:35.660  5697-30765 AdrenoGLES-0            com.doodhwallah.app                  I  Driver Path                      : /vendor/lib64/egl/libGLESv2_adreno.so
+2026-01-22 21:29:35.660  5697-30765 AdrenoGLES-0            com.doodhwallah.app                  I  Driver Version                   : 0615.50
+2026-01-22 21:29:35.667  5697-30765 AdrenoGLES-0            com.doodhwallah.app                  I  PFP: 0x01730155, ME: 0x00000000
+2026-01-22 21:29:35.670  5697-5697  Compatibil...geReporter com.doodhwallah.app                  D  Compat change id reported: 193247900; UID 10331; state: ENABLED
+2026-01-22 21:29:35.673  5697-30778 CameraManagerGlobal     com.doodhwallah.app                  I  Connecting to camera service
+2026-01-22 21:29:35.679  5697-30765 libc                    com.doodhwallah.app                  W  Access denied finding property "vendor.migl.debug"
+2026-01-22 21:29:35.681  5697-30778 CameraExtStub           com.doodhwallah.app                  D  init android.hardware.camera2.impl.CameraExtImplXiaoMi
+2026-01-22 21:29:35.682  5697-30783 CameraInjector          com.doodhwallah.app                  D  updateCloudCameraControllerInfoAsync: E
+2026-01-22 21:29:35.687  5697-5697  VRI[MainActivity]       com.doodhwallah.app                  D  vri.reportNextDraw android.view.ViewRootImpl.performTraversals:2957 android.view.ViewRootImpl.doTraversal:36 android.view.ViewRootImpl$TraversalRunnable.run:7 android.view.Choreographer$CallbackRecord.run:20 android.view.Choreographer$CallbackRecord.run:20 
+2026-01-22 21:29:35.687  5697-5697  VRI[MainActivity]       com.doodhwallah.app                  D  vri.Setup new sync id=0 syncSeqId=0
+2026-01-22 21:29:35.688  5697-30783 ActivityThread          com.doodhwallah.app                  E  Failed to find provider info for com.android.camera.miviInfoProvider
+2026-01-22 21:29:35.689  5697-30783 CameraInjector          com.doodhwallah.app                  I  updateCloudCameraControllerInfoAsync: with null data
+2026-01-22 21:29:35.689  5697-30783 CameraInjector          com.doodhwallah.app                  D  updateCloudCameraControllerInfoAsync: X
+2026-01-22 21:29:35.689  5697-30778 libc                    com.doodhwallah.app                  W  Access denied finding property "vendor.camera.aux.packagelist"
+2026-01-22 21:29:35.689  5697-30778 CameraManagerGlobal     com.doodhwallah.app                  W  [soar.cts] ignore the status update of camera: 2
+2026-01-22 21:29:35.689  5697-30778 libc                    com.doodhwallah.app                  W  Access denied finding property "vendor.camera.aux.packagelist"
+2026-01-22 21:29:35.689  5697-30778 CameraManagerGlobal     com.doodhwallah.app                  W  [soar.cts] ignore the status update of camera: 3
+2026-01-22 21:29:35.689  5697-30778 libc                    com.doodhwallah.app                  W  Access denied finding property "vendor.camera.aux.packagelist"
+2026-01-22 21:29:35.689  5697-30778 CameraManagerGlobal     com.doodhwallah.app                  W  [soar.cts] ignore the status update of camera: 4
+2026-01-22 21:29:35.689  5697-30778 libc                    com.doodhwallah.app                  W  Access denied finding property "vendor.camera.aux.packagelist"
+2026-01-22 21:29:35.689  5697-30778 CameraManagerGlobal     com.doodhwallah.app                  W  [soar.cts] ignore the status update of camera: 5
+2026-01-22 21:29:35.689  5697-30778 libc                    com.doodhwallah.app                  W  Access denied finding property "vendor.camera.aux.packagelist"
+2026-01-22 21:29:35.689  5697-30778 CameraManagerGlobal     com.doodhwallah.app                  W  [soar.cts] ignore the status update of camera: 6
+2026-01-22 21:29:35.689  5697-30708 libEGL                  com.doodhwallah.app                  E  pre_cache appList: ,,
+2026-01-22 21:29:35.690  5697-30702 libc                    com.doodhwallah.app                  W  Access denied finding property "vendor.camera.aux.packagelist"
+2026-01-22 21:29:35.690  5697-30702 CameraManagerGlobal     com.doodhwallah.app                  W  ignore the torch status update of camera: 2
+2026-01-22 21:29:35.690  5697-30702 libc                    com.doodhwallah.app                  W  Access denied finding property "vendor.camera.aux.packagelist"
+2026-01-22 21:29:35.690  5697-30702 CameraManagerGlobal     com.doodhwallah.app                  W  ignore the torch status update of camera: 3
+2026-01-22 21:29:35.690  5697-30702 libc                    com.doodhwallah.app                  W  Access denied finding property "vendor.camera.aux.packagelist"
+2026-01-22 21:29:35.690  5697-30702 CameraManagerGlobal     com.doodhwallah.app                  W  ignore the torch status update of camera: 4
+2026-01-22 21:29:35.690  5697-30702 libc                    com.doodhwallah.app                  W  Access denied finding property "vendor.camera.aux.packagelist"
+2026-01-22 21:29:35.690  5697-30702 CameraManagerGlobal     com.doodhwallah.app                  W  ignore the torch status update of camera: 5
+2026-01-22 21:29:35.702  5697-30708 doodhwallah.app         com.doodhwallah.app                  D  MiuiProcessManagerServiceStub setSchedFifo
+2026-01-22 21:29:35.702  5697-30708 MiuiProcessManagerImpl  com.doodhwallah.app                  I  setSchedFifo pid:5697, mode:3
+2026-01-22 21:29:35.721  5697-30708 perf_hint               com.doodhwallah.app                  E  Session creation failed, mPreferredRateNanos: -1
+2026-01-22 21:29:35.723  5697-5697  VRI[MainActivity]       com.doodhwallah.app                  D  vri.reportDrawFinished syncSeqId=0 android.view.ViewRootImpl.lambda$createSyncIfNeeded$4$android-view-ViewRootImpl:5 android.view.ViewRootImpl$$ExternalSyntheticLambda1.run:6 android.os.Handler.handleCallback:2 android.os.Handler.dispatchMessage:4 android.os.Looper.loopOnce:182 
+2026-01-22 21:29:35.743  5697-5697  DecorView[]             com.doodhwallah.app                  D  onWindowFocusChanged hasWindowFocus true
+2026-01-22 21:29:35.749  5697-5697  HandWritingStubImpl     com.doodhwallah.app                  I  refreshLastKeyboardType: 1
+2026-01-22 21:29:35.749  5697-5697  HandWritingStubImpl     com.doodhwallah.app                  I  getCurrentKeyboardType: 1
+2026-01-22 21:29:35.753  5697-5697  HandWritingStubImpl     com.doodhwallah.app                  I  getCurrentKeyboardType: 1
+2026-01-22 21:29:35.757  5697-30757 AudioCapabilities       com.doodhwallah.app                  W  Unsupported mime audio/alac
+2026-01-22 21:29:35.757  5697-30757 AudioCapabilities       com.doodhwallah.app                  W  Unsupported mime audio/x-ape
+2026-01-22 21:29:35.757  5697-30757 AudioCapabilities       com.doodhwallah.app                  W  Unsupported mime audio/evrc
+2026-01-22 21:29:35.757  5697-30757 AudioCapabilities       com.doodhwallah.app                  W  Unsupported mime audio/qcelp
+2026-01-22 21:29:35.757  5697-30757 AudioCapabilities       com.doodhwallah.app                  W  Unsupported mime audio/dsd
+2026-01-22 21:29:35.757  5697-30757 AudioCapabilities       com.doodhwallah.app                  W  Unsupported mime audio/amr-wb-plus
+2026-01-22 21:29:35.757  5697-30757 AudioCapabilities       com.doodhwallah.app                  W  Unsupported mime audio/x-ms-wma
+2026-01-22 21:29:35.757  5697-30757 AudioCapabilities       com.doodhwallah.app                  W  Unsupported mime audio/evrc
+2026-01-22 21:29:35.758  5697-30757 AudioCapabilities       com.doodhwallah.app                  W  Unsupported mime audio/qcelp
+2026-01-22 21:29:35.758  5697-30757 AudioCapabilities       com.doodhwallah.app                  W  Unsupported mime audio/alac
+2026-01-22 21:29:35.758  5697-30757 AudioCapabilities       com.doodhwallah.app                  W  Unsupported mime audio/x-ape
+2026-01-22 21:29:35.774  5697-30757 VideoCapabilities       com.doodhwallah.app                  W  Unsupported mime image/vnd.android.heic
+2026-01-22 21:29:35.774  5697-30757 VideoCapabilities       com.doodhwallah.app                  W  Unsupported mime image/vnd.android.heic
+2026-01-22 21:29:35.775  5697-30757 VideoCapabilities       com.doodhwallah.app                  W  Unsupported mime video/dolby-vision
+2026-01-22 21:29:35.775  5697-30757 VideoCapabilities       com.doodhwallah.app                  W  Unsupported mime video/dolby-vision
+2026-01-22 21:29:35.786  5697-30757 cr_VAUtil               com.doodhwallah.app                  W  Unknown level: 2048 for profile 32 of codec video/dolby-vision
+2026-01-22 21:29:35.786  5697-30757 cr_VAUtil               com.doodhwallah.app                  W  Unknown profile: 16 for codec video/dolby-vision
+2026-01-22 21:29:35.786  5697-30757 cr_VAUtil               com.doodhwallah.app                  W  Unknown level: 2048 for profile 256 of codec video/dolby-vision
+2026-01-22 21:29:35.786  5697-30757 cr_VAUtil               com.doodhwallah.app                  W  Unknown level: 2048 for profile 32 of codec video/dolby-vision
+2026-01-22 21:29:35.786  5697-30757 cr_VAUtil               com.doodhwallah.app                  W  Unknown profile: 16 for codec video/dolby-vision
+2026-01-22 21:29:35.787  5697-30757 cr_VAUtil               com.doodhwallah.app                  W  Unknown level: 2048 for profile 256 of codec video/dolby-vision
+2026-01-22 21:29:38.205  5697-30765 libEGL                  com.doodhwallah.app                  E  pre_cache appList: ,,
+2026-01-22 21:29:41.086  5697-30858 ProfileInstaller        com.doodhwallah.app                  D  Installing profile for com.doodhwallah.app
+2026-01-22 21:29:43.420  5697-30704 doodhwallah.app         com.doodhwallah.app                  I  ProcessProfilingInfo new_methods=0 is saved saved_to_disk=0 resolve_classes_delay=8000
+2026-01-22 21:29:45.577  5697-30691 doodhwallah.app         com.doodhwallah.app                  I  This is non sticky GC, maxfree is 8388608 minfree is 2097152
+2026-01-22 21:29:45.573  5697-5697  FinalizerDaemon         com.doodhwallah.app                  W  type=1400 audit(0.0:67011): avc: denied { getopt } for path="/dev/socket/usap_pool_primary" scontext=u:r:untrusted_app:s0:c75,c257,c512,c768 tcontext=u:r:zygote:s0 tclass=unix_stream_socket permissive=0
+2026-01-22 21:29:55.976  5697-5697  MirrorManager           com.doodhwallah.app                  W  this model don't Support
+2026-01-22 21:29:55.978  5697-5697  doodhwallah.app         com.doodhwallah.app                  W  Accessing hidden method Landroid/view/MotionEvent;->getEventTimeNano()J (unsupported, reflection, allowed)
+2026-01-22 21:29:56.025  5697-5697  Capacitor/Console       com.doodhwallah.app                  W  File: https://doodhwallah.vercel.app/assets/index-Byx8Wv_n.js - Line 339 - Msg: Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+2026-01-22 21:30:05.600  5697-5697  doodhwallah.app         com.doodhwallah.app                  W  Accessing hidden method Landroid/view/MotionEvent;->getHistoricalEventTimeNano(I)J (max-target-o, reflection, denied)
+2026-01-22 21:30:05.715  1350-1350  vendor.qti...al-service ven...qti.hardware.perf-hal-service  E  ExtendedPerfBoost: extended_perfboost_verification() 742: Ok, set boost params. hintid=4224 hinttype=1 prio=0, clientpid=2582 packagename=com.doodhwallah.app params=boost:1 cpu0:1804800 cpu4:2496000 cpu7:2592000
+2026-01-22 21:30:06.797  1350-1350  vendor.qti...al-service ven...qti.hardware.perf-hal-service  E  ExtendedPerfBoost: extended_perfboost_verification() 742: Ok, set boost params. hintid=4224 hinttype=1 prio=0, clientpid=2582 packagename=com.doodhwallah.app params=boost:1 cpu0:1804800 cpu4:2496000 cpu7:2592000
+2026-01-22 21:31:26.661  5697-5697  Capacitor               com.doodhwallah.app                  D  App paused
+2026-01-22 21:31:26.721  5697-5697  Capacitor               com.doodhwallah.app                  D  App stopped
+2026-01-22 21:31:26.724  5697-5697  Capacitor               com.doodhwallah.app                  D  Saving instance state!
+2026-01-22 21:31:26.778  4033-5191  ActivityManagerWrapper  com.miui.home                        E  getRecentTasks: mainTaskId=1614   userId=0   baseIntent=Intent { act=android.intent.action.MAIN flag=270532608 cmp=ComponentInfo{com.doodhwallah.app/com.doodhwallah.app.MainActivity} }
+2026-01-22 21:31:26.786  4033-5191  ActivityManagerWrapper  com.miui.home                        E  getRecentTasks: mainTaskId=1614   userId=0   baseIntent=Intent { act=android.intent.action.MAIN flag=270532608 cmp=ComponentInfo{com.doodhwallah.app/com.doodhwallah.app.MainActivity} }
+2026-01-22 21:31:26.850  5697-5697  DecorView[]             com.doodhwallah.app                  D  onWindowFocusChanged hasWindowFocus false
+2026-01-22 21:31:31.724  5697-30691 doodhwallah.app         com.doodhwallah.app                  I  This is non sticky GC, maxfree is 8388608 minfree is 2097152
+2026-01-22 21:32:50.303  5697-5697  ForceDarkHelperStubImpl com.doodhwallah.app                  I  setViewRootImplForceDark: false for com.doodhwallah.app.MainActivity@cfb3320, reason: AppDarkModeEnable
+2026-01-22 21:32:50.319  5697-30702 AppScoutStateMachine    com.doodhwallah.app                  D  5697-ScoutStateMachinecreated
+2026-01-22 21:32:50.332  5697-5697  Capacitor               com.doodhwallah.app                  D  App restarted
+2026-01-22 21:32:50.332  5697-5697  Capacitor               com.doodhwallah.app                  D  App started
+2026-01-22 21:32:50.336  5697-5697  Capacitor               com.doodhwallah.app                  D  App resumed
+2026-01-22 21:32:50.365  5697-5697  VRI[MainActivity]       com.doodhwallah.app                  D  vri.reportNextDraw android.view.ViewRootImpl.performTraversals:2957 android.view.ViewRootImpl.doTraversal:36 android.view.ViewRootImpl$TraversalRunnable.run:7 android.view.Choreographer$CallbackRecord.run:20 android.view.Choreographer$CallbackRecord.run:20 
+2026-01-22 21:32:50.365  5697-5697  VRI[MainActivity]       com.doodhwallah.app                  D  vri.Setup new sync id=1 syncSeqId=0
+2026-01-22 21:32:50.391  5697-5697  VRI[MainActivity]       com.doodhwallah.app                  D  vri.reportDrawFinished syncSeqId=0 android.view.ViewRootImpl.lambda$createSyncIfNeeded$4$android-view-ViewRootImpl:5 android.view.ViewRootImpl$$ExternalSyntheticLambda1.run:6 android.os.Handler.handleCallback:2 android.os.Handler.dispatchMessage:4 android.os.Looper.loopOnce:182 
+2026-01-22 21:32:50.480  5697-5697  DecorView[]             com.doodhwallah.app                  D  onWindowFocusChanged hasWindowFocus true
+2026-01-22 21:32:50.492  5697-5697  HandWritingStubImpl     com.doodhwallah.app                  I  refreshLastKeyboardType: 1
+2026-01-22 21:32:50.492  5697-5697  HandWritingStubImpl     com.doodhwallah.app                  I  getCurrentKeyboardType: 1
+2026-01-22 21:33:52.199  5697-5697  Capacitor               com.doodhwallah.app                  D  App paused
+2026-01-22 21:33:52.214  5697-5697  DecorView[]             com.doodhwallah.app                  D  onWindowFocusChanged hasWindowFocus false
+2026-01-22 21:33:52.217  5697-5697  Capacitor               com.doodhwallah.app                  D  App stopped
+2026-01-22 21:33:52.218  5697-5697  Capacitor               com.doodhwallah.app                  D  Saving instance state!
+2026-01-22 21:33:52.321  4033-5191  ActivityManagerWrapper  com.miui.home                        E  getRecentTasks: mainTaskId=1614   userId=0   baseIntent=Intent { act=android.intent.action.MAIN flag=270532608 cmp=ComponentInfo{com.doodhwallah.app/com.doodhwallah.app.MainActivity} }
+2026-01-22 21:33:52.336  4033-5191  ActivityManagerWrapper  com.miui.home                        E  getRecentTasks: mainTaskId=1614   userId=0   baseIntent=Intent { act=android.intent.action.MAIN flag=270532608 cmp=ComponentInfo{com.doodhwallah.app/com.doodhwallah.app.MainActivity} }
+2026-01-22 21:34:50.136  5697-5697  ForceDarkHelperStubImpl com.doodhwallah.app                  I  setViewRootImplForceDark: false for com.doodhwallah.app.MainActivity@cfb3320, reason: AppDarkModeEnable
+2026-01-22 21:34:50.147  5697-30787 AppScoutStateMachine    com.doodhwallah.app                  D  5697-ScoutStateMachinecreated
+2026-01-22 21:34:50.191  5697-5697  Capacitor               com.doodhwallah.app                  D  App restarted
+2026-01-22 21:34:50.192  5697-5697  Capacitor               com.doodhwallah.app                  D  App started
+2026-01-22 21:34:50.194  5697-5697  Capacitor               com.doodhwallah.app                  D  App resumed
+2026-01-22 21:34:50.215  5697-5697  VRI[MainActivity]       com.doodhwallah.app                  D  vri.reportNextDraw android.view.ViewRootImpl.performTraversals:2957 android.view.ViewRootImpl.doTraversal:36 android.view.ViewRootImpl$TraversalRunnable.run:7 android.view.Choreographer$CallbackRecord.run:20 android.view.Choreographer$CallbackRecord.run:20 
+2026-01-22 21:34:50.216  5697-5697  VRI[MainActivity]       com.doodhwallah.app                  D  vri.Setup new sync id=2 syncSeqId=0
+2026-01-22 21:34:50.240  5697-5697  VRI[MainActivity]       com.doodhwallah.app                  D  vri.reportDrawFinished syncSeqId=0 android.view.ViewRootImpl.lambda$createSyncIfNeeded$4$android-view-ViewRootImpl:5 android.view.ViewRootImpl$$ExternalSyntheticLambda1.run:6 android.os.Handler.handleCallback:2 android.os.Handler.dispatchMessage:4 android.os.Looper.loopOnce:182 
+2026-01-22 21:34:50.275  5697-5697  DecorView[]             com.doodhwallah.app                  D  onWindowFocusChanged hasWindowFocus true
+2026-01-22 21:34:50.286  5697-5697  HandWritingStubImpl     com.doodhwallah.app                  I  refreshLastKeyboardType: 1
+2026-01-22 21:34:50.287  5697-5697  HandWritingStubImpl     com.doodhwallah.app                  I  getCurrentKeyboardType: 1
+2026-01-22 21:34:52.238  5697-5697  DecorView[]             com.doodhwallah.app                  D  onWindowFocusChanged hasWindowFocus false
+2026-01-22 21:34:52.288  1350-1350  vendor.qti...al-service ven...qti.hardware.perf-hal-service  E  ExtendedPerfBoost: extended_perfboost_verification() 742: Ok, set boost params. hintid=4224 hinttype=1 prio=0, clientpid=2582 packagename=com.doodhwallah.app params=boost:1 cpu0:1804800 cpu4:2496000 cpu7:2592000
+2026-01-22 21:35:51.864  1350-1350  vendor.qti...al-service ven...qti.hardware.perf-hal-service  E  ExtendedPerfBoost: extended_perfboost_verification() 742: Ok, set boost params. hintid=4224 hinttype=1 prio=0, clientpid=2582 packagename=com.doodhwallah.app params=boost:1 cpu0:1804800 cpu4:2496000 cpu7:2592000
+2026-01-22 21:35:52.135  5697-5697  DecorView[]             com.doodhwallah.app                  D  onWindowFocusChanged hasWindowFocus true
+2026-01-22 21:35:52.140  5697-5697  HandWritingStubImpl     com.doodhwallah.app                  I  refreshLastKeyboardType: 1
+2026-01-22 21:35:52.140  5697-5697  HandWritingStubImpl     com.doodhwallah.app                  I  getCurrentKeyboardType: 1
+2026-01-22 21:35:52.308  1350-1350  vendor.qti...al-service ven...qti.hardware.perf-hal-service  E  ExtendedPerfBoost: extended_perfboost_verification() 742: Ok, set boost params. hintid=4224 hinttype=1 prio=0, clientpid=2582 packagename=com.doodhwallah.app params=boost:1 cpu0:1804800 cpu4:2496000 cpu7:2592000
+2026-01-22 21:36:07.559  1350-1350  vendor.qti...al-service ven...qti.hardware.perf-hal-service  E  ExtendedPerfBoost: extended_perfboost_verification() 742: Ok, set boost params. hintid=4224 hinttype=1 prio=0, clientpid=2582 packagename=com.doodhwallah.app params=boost:1 cpu0:1804800 cpu4:2496000 cpu7:2592000

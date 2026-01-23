@@ -29,7 +29,9 @@ async function handleCapacitorPDF(doc: jsPDF, fileName: string): Promise<void> {
     const Capacitor = (window as any).Capacitor;
     const Filesystem = Capacitor?.Plugins?.Filesystem;
     const Share = Capacitor?.Plugins?.Share;
+    const Browser = Capacitor?.Plugins?.Browser;
     
+    // Method 1: Use Filesystem + Share plugins if available
     if (Filesystem && Share) {
       const pdfBase64 = doc.output("datauristring").split(",")[1];
       
@@ -47,26 +49,41 @@ async function handleCapacitorPDF(doc: jsPDF, fileName: string): Promise<void> {
       return;
     }
     
-    // Fallback: Use blob URL and open in new window/tab
-    const pdfBlob = doc.output("blob");
-    const blobUrl = URL.createObjectURL(pdfBlob);
-    
-    // Try to open in new window (works in some Android WebViews)
-    const newWindow = window.open(blobUrl, "_blank");
-    
-    if (!newWindow) {
-      // If popup blocked, create download link
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = fileName;
-      link.style.display = "none";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    // Method 2: Use Browser plugin to open in external browser
+    if (Browser) {
+      const pdfBlob = doc.output("blob");
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      await Browser.open({ url: blobUrl });
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+      return;
     }
     
-    // Clean up blob URL after a delay
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+    // Method 3: Open data URI in external browser using _system target
+    const dataUri = doc.output("datauristring");
+    const externalWindow = window.open(dataUri, "_system");
+    if (externalWindow) {
+      return;
+    }
+    
+    // Method 4: Try opening blob URL in external browser
+    const pdfBlob = doc.output("blob");
+    const blobUrl = URL.createObjectURL(pdfBlob);
+    const systemWindow = window.open(blobUrl, "_system");
+    if (systemWindow) {
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+      return;
+    }
+    
+    // Method 5: Use anchor tag with download attribute
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = fileName;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
   } catch (error) {
     devError("Capacitor PDF error:", error);
     // Last resort fallback
