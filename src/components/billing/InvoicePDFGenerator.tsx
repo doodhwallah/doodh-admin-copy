@@ -4,7 +4,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, Eye } from "lucide-react";
+import { Download, Loader2, Eye, Printer } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -183,6 +183,277 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
   const [generating, setGenerating] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [pdfDataUrl, setPdfDataUrl] = useState<string | null>(null);
+  const [printing, setPrinting] = useState(false);
+
+  const handlePrint = async () => {
+    setPrinting(true);
+    try {
+      const { data: settingsData } = await supabase
+        .from("dairy_settings")
+        .select("*")
+        .limit(1)
+        .single();
+
+      const settings: DairySettings = settingsData || {
+        dairy_name: "Doodh Wallah Dairy",
+        address: null,
+        phone: null,
+        email: null,
+        currency: "INR",
+        invoice_prefix: "INV",
+      };
+
+      const { data: customerData } = await supabase
+        .from("customers")
+        .select("*")
+        .eq("id", invoice.customer_id)
+        .single();
+
+      const customer: Customer = customerData || {
+        id: invoice.customer_id,
+        name: invoice.customer?.name || "Customer",
+        phone: null,
+        email: null,
+        address: null,
+        area: null,
+      };
+
+      const { data: deliveries } = await supabase
+        .from("deliveries")
+        .select(`
+          delivery_date,
+          delivery_items (
+            quantity,
+            unit_price,
+            total_amount,
+            product:product_id (name, unit)
+          )
+        `)
+        .eq("customer_id", invoice.customer_id)
+        .gte("delivery_date", invoice.billing_period_start)
+        .lte("delivery_date", invoice.billing_period_end)
+        .eq("status", "delivered");
+
+      const items: DeliveryItem[] = [];
+      const typedDeliveries = (deliveries || []) as DeliveryQueryResult[];
+      typedDeliveries.forEach((delivery) => {
+        (delivery.delivery_items || []).forEach((item) => {
+          items.push({
+            product_name: item.product?.name || "Product",
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            total_amount: item.total_amount,
+            delivery_date: delivery.delivery_date,
+            unit: item.product?.unit || "unit",
+          });
+        });
+      });
+
+      interface GroupedItem {
+        product_name: string;
+        quantity: number;
+        unit_price: number;
+        total_amount: number;
+        unit: string;
+        delivery_count: number;
+      }
+      const groupedItems = items.reduce((acc: Record<string, GroupedItem>, item) => {
+        const key = item.product_name;
+        if (!acc[key]) {
+          acc[key] = {
+            product_name: item.product_name,
+            quantity: 0,
+            unit_price: item.unit_price,
+            total_amount: 0,
+            unit: item.unit,
+            delivery_count: 0,
+          };
+        }
+        acc[key].quantity += item.quantity;
+        acc[key].total_amount += item.total_amount;
+        acc[key].delivery_count += 1;
+        return acc;
+      }, {});
+
+      const totalDeliveries = Object.values(groupedItems).reduce((sum, item) => sum + item.delivery_count, 0);
+
+      const printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Invoice ${invoice.invoice_number}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; padding: 20px; color: #1e293b; }
+            .header { background: #4f46e5; color: white; padding: 20px; margin: -20px -20px 20px; }
+            .header h1 { font-size: 22px; margin-bottom: 5px; }
+            .header p { font-size: 12px; opacity: 0.9; }
+            .invoice-badge { background: white; color: #4f46e5; padding: 10px 15px; border-radius: 5px; display: inline-block; float: right; }
+            .invoice-badge h2 { font-size: 14px; margin-bottom: 3px; }
+            .invoice-badge span { font-size: 11px; color: #1e293b; }
+            .clearfix::after { content: ""; clear: both; display: table; }
+            .section { display: flex; gap: 20px; margin-bottom: 20px; }
+            .box { flex: 1; background: #f8fafc; padding: 15px; border-radius: 5px; }
+            .box h3 { color: #4f46e5; font-size: 11px; margin-bottom: 10px; text-transform: uppercase; }
+            .box p { font-size: 12px; margin-bottom: 4px; }
+            .box .name { font-size: 14px; font-weight: bold; margin-bottom: 8px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+            th { background: #4f46e5; color: white; padding: 10px; text-align: left; font-size: 11px; }
+            td { padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 11px; }
+            tr:nth-child(even) { background: #f8fafc; }
+            .text-right { text-align: right; }
+            .summary { width: 250px; margin-left: auto; background: #f8fafc; padding: 15px; border-radius: 5px; }
+            .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; }
+            .summary-total { background: #4f46e5; color: white; padding: 10px; border-radius: 5px; margin-top: 10px; }
+            .summary-total .summary-row { margin-bottom: 0; font-weight: bold; }
+            .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #10b981; }
+            .footer h4 { color: #4f46e5; margin-bottom: 5px; }
+            .footer p { font-size: 10px; color: #64748b; }
+            .status { display: inline-block; padding: 4px 12px; border-radius: 3px; font-size: 10px; font-weight: bold; color: white; }
+            .status-paid { background: #10b981; }
+            .status-partial { background: #f59e0b; }
+            .status-pending { background: #64748b; }
+            .status-overdue { background: #ef4444; }
+            .note { font-size: 10px; color: #64748b; font-style: italic; margin-bottom: 15px; }
+            @media print {
+              body { padding: 0; }
+              .header { margin: 0 0 20px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header clearfix">
+            <div class="invoice-badge">
+              <h2>INVOICE</h2>
+              <span>${invoice.invoice_number}</span>
+            </div>
+            <h1>${settings.dairy_name}</h1>
+            <p>Fresh Dairy Delivered</p>
+            ${settings.phone || settings.email ? `<p style="margin-top:5px">${[settings.phone ? `Tel: ${settings.phone}` : '', settings.email ? `Email: ${settings.email}` : ''].filter(Boolean).join(' | ')}</p>` : ''}
+            ${settings.address ? `<p>${settings.address}</p>` : ''}
+          </div>
+          
+          <div class="section">
+            <div class="box">
+              <h3>Bill To</h3>
+              <p class="name">${customer.name}</p>
+              ${customer.address ? `<p>${customer.address}</p>` : ''}
+              ${customer.area ? `<p>Area: ${customer.area}</p>` : ''}
+              ${customer.phone ? `<p>Phone: ${customer.phone}</p>` : ''}
+            </div>
+            <div class="box">
+              <h3>Invoice Details</h3>
+              <p><strong>Date:</strong> ${format(new Date(invoice.created_at), "dd MMM yyyy")}</p>
+              <p><strong>Period:</strong> ${format(new Date(invoice.billing_period_start), "dd MMM")} - ${format(new Date(invoice.billing_period_end), "dd MMM yyyy")}</p>
+              <p><strong>Due Date:</strong> ${invoice.due_date ? format(new Date(invoice.due_date), "dd MMM yyyy") : "On Receipt"}</p>
+              <p style="margin-top:8px"><span class="status status-${invoice.payment_status}">${invoice.payment_status.toUpperCase()}</span></p>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Product</th>
+                <th class="text-right">Total Qty</th>
+                <th class="text-right">Rate</th>
+                <th class="text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Object.values(groupedItems).map((item, index) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td>${item.product_name}</td>
+                  <td class="text-right">${item.quantity.toFixed(2)} ${item.unit}</td>
+                  <td class="text-right">${formatIndianCurrency(item.unit_price)}/${item.unit}</td>
+                  <td class="text-right">${formatIndianCurrency(item.total_amount)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          <p class="note">* Based on ${totalDeliveries} deliveries during billing period</p>
+
+          <div class="summary">
+            <div class="summary-row"><span>Subtotal:</span><span>${formatIndianCurrency(Number(invoice.total_amount))}</span></div>
+            <div class="summary-row"><span>Discount:</span><span style="color:#10b981">${Number(invoice.discount_amount) > 0 ? `-${formatIndianCurrency(Math.abs(Number(invoice.discount_amount)))}` : formatIndianCurrency(0)}</span></div>
+            <div class="summary-row"><span>Tax:</span><span>${formatIndianCurrency(Number(invoice.tax_amount))}</span></div>
+            <div class="summary-total">
+              <div class="summary-row"><span>Grand Total:</span><span>${formatIndianCurrency(Number(invoice.final_amount))}</span></div>
+            </div>
+            ${Number(invoice.paid_amount) > 0 ? `
+              <div style="margin-top:10px; padding:10px; background:#d1fae5; border-radius:5px;">
+                <div class="summary-row" style="color:#10b981"><span>Amount Paid:</span><span>${formatIndianCurrency(Number(invoice.paid_amount))}</span></div>
+                ${Number(invoice.final_amount) - Number(invoice.paid_amount) > 0 ? `
+                  <div class="summary-row" style="color:#ef4444"><span>Balance Due:</span><span>${formatIndianCurrency(Number(invoice.final_amount) - Number(invoice.paid_amount))}</span></div>
+                ` : ''}
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="footer">
+            <h4>Thank you for your business!</h4>
+            <p>For queries, please contact us | Payment is due within 15 days of invoice date</p>
+            <p style="margin-top:10px; color:#999">Generated on ${format(new Date(), "dd MMM yyyy 'at' HH:mm")}</p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Use iframe approach for better WebView compatibility
+      const existingFrame = document.getElementById('print-frame');
+      if (existingFrame) {
+        existingFrame.remove();
+      }
+      
+      const iframe = document.createElement('iframe');
+      iframe.id = 'print-frame';
+      iframe.style.position = 'absolute';
+      iframe.style.top = '-10000px';
+      iframe.style.left = '-10000px';
+      iframe.style.width = '210mm';
+      iframe.style.height = '297mm';
+      document.body.appendChild(iframe);
+      
+      const iframeDoc = iframe.contentWindow?.document;
+      if (iframeDoc) {
+        iframeDoc.open();
+        iframeDoc.write(printContent);
+        iframeDoc.close();
+        
+        // Wait for content to load then print
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } catch {
+            // Fallback: try window.print() which might work in some WebViews
+            window.print();
+          }
+          // Clean up after printing
+          setTimeout(() => {
+            iframe.remove();
+          }, 1000);
+        }, 500);
+      } else {
+        // Fallback if iframe approach fails
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(printContent);
+          printWindow.document.close();
+          printWindow.focus();
+          setTimeout(() => {
+            printWindow.print();
+          }, 250);
+        }
+      }
+    } catch (error) {
+      devError("Error printing invoice:", error);
+    } finally {
+      setPrinting(false);
+    }
+  };
 
   const generatePDF = async (action: "download" | "preview" = "download") => {
     setGenerating(true);
@@ -645,7 +916,7 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
           size="sm"
           className="gap-1"
           onClick={() => generatePDF("preview")}
-          disabled={generating}
+          disabled={generating || printing}
         >
           <Eye className="h-3 w-3" />
         </Button>
@@ -654,7 +925,7 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
           size="sm"
           className="gap-1"
           onClick={() => generatePDF("download")}
-          disabled={generating}
+          disabled={generating || printing}
         >
           {generating ? (
             <Loader2 className="h-3 w-3 animate-spin" />
@@ -662,6 +933,19 @@ export function InvoicePDFGenerator({ invoice, onGenerated }: InvoicePDFGenerato
             <Download className="h-3 w-3" />
           )}
           PDF
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1"
+          onClick={handlePrint}
+          disabled={generating || printing}
+        >
+          {printing ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <Printer className="h-3 w-3" />
+          )}
         </Button>
       </div>
 
